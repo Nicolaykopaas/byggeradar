@@ -82,8 +82,12 @@ def compute_scores(saker: pd.DataFrame, bedrifter: pd.DataFrame) -> pd.DataFrame
 
 
 if __name__ == "__main__":
-    saker = pd.read_csv("data/saker.csv")
-    bedrifter = pd.read_csv("data/bedrifter.csv")
+    # dtype=str er nødvendig: uten det tolker pandas koder som "43.210" og
+    # postnumre med ledende null (f.eks. "0170") som tall og ødelegger matching.
+    saker = pd.read_csv("data/saker.csv", dtype={"kommunenummer": str, "postnummer": str, "sak_id": str})
+    bedrifter = pd.read_csv("data/bedrifter.csv", dtype={
+        "organisasjonsnummer": str, "nace_kode": str, "kommunenummer": str, "postnummer": str,
+    })
     matches = compute_scores(saker, bedrifter)
     matches.to_csv("data/matches.csv", index=False)
     print(f"Lagret {len(matches)} matcher til data/matches.csv")

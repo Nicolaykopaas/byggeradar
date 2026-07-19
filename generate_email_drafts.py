@@ -52,9 +52,9 @@ def generer_utkast(matches: pd.DataFrame, kontaktet: pd.DataFrame, output_dir: s
 
 
 if __name__ == "__main__":
-    matches = pd.read_csv("data/matches.csv")
+    matches = pd.read_csv("data/matches.csv", dtype={"organisasjonsnummer": str, "sak_id": str})
     try:
-        kontaktet = pd.read_csv("data/kontaktet.csv")
+        kontaktet = pd.read_csv("data/kontaktet.csv", dtype={"organisasjonsnummer": str})
     except FileNotFoundError:
         kontaktet = pd.DataFrame(columns=["organisasjonsnummer"])
 
