@@ -120,7 +120,7 @@ visning_kolonner = {
 }
 st.dataframe(
     visning[list(visning_kolonner.keys())].rename(columns=visning_kolonner),
-    use_container_width=True,
+    width="stretch",
     hide_index=True,
 )
 
