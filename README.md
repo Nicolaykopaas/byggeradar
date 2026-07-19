@@ -4,7 +4,13 @@ Lead-gen for håndverksbedrifter: varsler om nye byggetillatelser i deres områd
 matchet mot håndverkere fra Brreg. Se [CLAUDE.md](CLAUDE.md) for arkitektur og regler.
 
 ## Status
-Pilot: under oppsett. Datakilde for byggesaker utredes (eInnsyn vs. kommunal innsynsløsning).
+Pilot: datakilde for byggesaker under research.
+
+- eInnsyns offisielle API (api.einnsyn.no) er en push-API for at kommuner skal *levere* data inn,
+  ikke en åpen lese-API for tredjeparter — krever Maskinporten/Altinn-tilgang.
+- Trondheim (`trondheim.innsynsportal.no`) og Oslo PBE (`innsyn.pbe.oslo.kommune.no`) har begge
+  `robots.txt: Disallow: /` og er derfor UTELUKKET som kilde (se regel om robots.txt i CLAUDE.md).
+- Leter etter en kommune med åpen postliste/RSS for byggesaker der robots.txt tillater henting.
 
 ## Kom i gang
 ```bash
