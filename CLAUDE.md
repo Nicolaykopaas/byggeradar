@@ -4,7 +4,7 @@ Lead-gen: skraper kommunale byggesaker og matcher mot håndverkere fra Brreg.
 Spin-off av anbudsradar-konseptet — samme mønster: gratis smakebit-lead på e-post, abonnement for løpende varsler.
 
 ## Arkitektur
-- `byggesak_fetch.py` — henter nye byggetillatelser (eInnsyn API og/eller kommunal innsynsløsning). Output: `data/saker.csv`
+- `byggesak_fetch.py` — henter nye byggetillatelser fra Bergen kommunes åpne saksinnsyn-API (`/innsynplanogbyggesak/api/saker`). Output: `data/saker.csv`
 - `brreg_fetch.py` — henter håndverkerbedrifter fra Brreg Enhetsregisteret API. Filtrer NACE 43.x + kommune/fylke. Output: `data/bedrifter.csv`
 - `compute_scores.py` — matchscore 0-100 per sak-bedrift-par: bransjematch (sakstype→NACE via tabell), geografisk nærhet, bedriftsstørrelse. Output: `data/matches.csv`
 - `generate_email_drafts.py` — ett utkast per topp-match. Kort, konkret, nevner adresse og sakstype. Output: `data/email_drafts/`
@@ -20,4 +20,4 @@ Spin-off av anbudsradar-konseptet — samme mønster: gratis smakebit-lead på e
 - Norsk i all output mot bruker (e-poster, dashbord)
 
 ## Status
-Se README.md for pilotstatus og hvilken kommune som er dekket.
+Pilot kjører mot Bergen kommune (kommunenr 4601). Se README.md for detaljer om datakilde og robots.txt-vurdering.

@@ -18,11 +18,14 @@ SAKSTYPE_TIL_NACE = {
     "snekker": "43.320",
     "tilbygg": "43.320",
     "påbygg": "43.320",
+    "nybygg": "43.320",
+    "enebolig": "43.320",
     "gulv": "43.330",
     "flis": "43.330",
     "mal": "43.341",
     "tak": "43.910",
     "rehabilitering": "43.999",
+    "bruksendring": "43.999",
 }
 
 VEKT_BRANSJE = 60

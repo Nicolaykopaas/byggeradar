@@ -1,76 +1,78 @@
-"""Henter nye byggesaker fra en kommunes offentlige postliste (RSS).
+"""Henter nye byggesaker fra Bergen kommunes saksinnsyn-API.
 
-Kun kilder der robots.txt tillater automatisert henting brukes - se KOMMUNER
-for hvilke kommuner som er godkjent og hvorfor. Output: data/saker.csv
+Verifisert: robots.txt for bergen.kommune.no blokkerer kun
+/innsynplanogbyggesak/api/fil/* og /innsynplanogbyggesak/api/saksgang -
+selve søke-API-et (/api/saker) er ikke omfattet.
 
-NB: Trondheim (trondheim.innsynsportal.no) og Oslo PBE (innsyn.pbe.oslo.kommune.no)
-er UTELUKKET - begge har robots.txt "Disallow: /" og skal ikke skrapes.
+Trondheim (trondheim.innsynsportal.no) og Oslo PBE
+(innsyn.pbe.oslo.kommune.no) er UTELUKKET - begge har robots.txt
+"Disallow: /" og skal ikke skrapes.
+
+VIKTIG: API-responsen inneholder "tiltakshaver" (navnet på privatpersonen
+som søker). Dette er en personopplysning og skal ALDRI lagres eller
+videreformidles - kun bedriftsdata fra Brreg skal brukes i matching og
+utsending. Feltet leses aldri ut i denne filen.
+
+Output: data/saker.csv
 """
 import re
 import time
-import xml.etree.ElementTree as ET
-from datetime import datetime
+from datetime import datetime, timezone
 
 import requests
 import pandas as pd
 
-# Nøkkelord som identifiserer byggesaker i postlistens tittel/beskrivelse
-BYGGESAK_NOKKELORD = [
-    "tillatelse til tiltak", "byggesøknad", "søknad om tiltak",
-    "igangsettingstillatelse", "bruksendring", "riving", "nybygg",
-    "tilbygg", "påbygg", "ferdigattest", "rammetillatelse",
-]
-
-# Kommuner godkjent for henting: RSS-URL og kommunenummer må fylles inn
-# etter at datakilde er verifisert (robots.txt tillater, RSS finnes).
-KOMMUNER = {
-    # "eksempel": {"kommunenummer": "0000", "rss_url": "https://..."},
-}
+BERGEN_KOMMUNENUMMER = "4601"
+BERGEN_API_URL = "https://www.bergen.kommune.no/innsynplanogbyggesak/api/saker"
+BERGEN_SAK_URL_MAL = "https://www.bergen.kommune.no/omkommunen/offentlig-innsyn/innsynplanogbyggesak/saksinnsyn/sak/{saksnr}"
 
 
-def er_byggesak(tekst: str) -> bool:
-    tekst_lower = (tekst or "").lower()
-    return any(nokkelord in tekst_lower for nokkelord in BYGGESAK_NOKKELORD)
+def _hent_postnummer(adresse_liste) -> str | None:
+    """Adressefeltet fra API-et er på formen 'Gateveien 1, 5230 Paradis'."""
+    if not adresse_liste:
+        return None
+    match = re.search(r"(\d{4})\s+\S", adresse_liste[0])
+    return match.group(1) if match else None
 
 
-def hent_adresse_fra_tittel(tittel: str) -> str:
-    """Beste-forsøk-uttrekk av adresse fra fritekst-tittel. Returnerer hele
-    tittelen hvis ikke noe adresse-lignende mønster finnes."""
-    match = re.search(r"([A-ZÆØÅa-zæøå .]+\d+[A-Za-z]?)(,|\s-\s|$)", tittel)
-    return match.group(1).strip() if match else tittel
+def _hent_gateadresse(adresse_liste) -> str | None:
+    if not adresse_liste:
+        return None
+    return adresse_liste[0].split(",")[0].strip()
 
 
-def fetch_saker(kommune_key: str, sleep_s: float = 0.5) -> pd.DataFrame:
-    if kommune_key not in KOMMUNER:
-        raise ValueError(
-            f"Ukjent kommune '{kommune_key}'. Legg til RSS-URL og kommunenummer i KOMMUNER "
-            f"- kun kommuner der robots.txt tillater henting skal legges til."
-        )
-    conf = KOMMUNER[kommune_key]
-
-    resp = requests.get(conf["rss_url"], timeout=20)
+def fetch_saker(rows: int = 100, sleep_s: float = 0.3) -> pd.DataFrame:
+    """Hent de `rows` sist innkomne byggesakene fra Bergen, nyest først."""
+    params = {
+        "tekst": "BYGG",  # matcher saksnr-prefiks BYGG-YYYY/NNNN, dvs. alle byggesaker
+        "start": 0,
+        "rows": rows,
+        "orderBy": "saksdato",
+        "asc": "false",
+    }
+    resp = requests.get(BERGEN_API_URL, params=params, timeout=20)
     resp.raise_for_status()
     time.sleep(sleep_s)
 
-    root = ET.fromstring(resp.content)
+    items = resp.json().get("items", [])
     rader = []
-    for item in root.iter("item"):
-        tittel = (item.findtext("title") or "").strip()
-        beskrivelse = (item.findtext("description") or "").strip()
-        if not er_byggesak(f"{tittel} {beskrivelse}"):
-            continue
-
-        lenke = item.findtext("link") or ""
-        pub_dato = item.findtext("pubDate") or ""
+    for sak in items:
+        saksnr = sak.get("saksnr")
+        saksdato_ms = sak.get("saksdato")
+        saksdato = (
+            datetime.fromtimestamp(saksdato_ms / 1000, tz=timezone.utc).date().isoformat()
+            if saksdato_ms else None
+        )
+        adresse_liste = sak.get("adresse") or []
 
         rader.append({
-            "sak_id": lenke or f"{kommune_key}-{tittel[:40]}",
-            "kommunenummer": conf["kommunenummer"],
-            "postnummer": None,
-            "adresse": hent_adresse_fra_tittel(tittel),
-            "saksdato": pub_dato,
-            "sakstype": tittel,
-            "kilde_url": lenke,
+            "sak_id": saksnr,
+            "kommunenummer": BERGEN_KOMMUNENUMMER,
+            "postnummer": _hent_postnummer(adresse_liste),
+            "adresse": _hent_gateadresse(adresse_liste),
+            "saksdato": saksdato,
+            "sakstype": sak.get("tittel"),
+            "kilde_url": BERGEN_SAK_URL_MAL.format(saksnr=saksnr) if saksnr else None,
         })
 
     return pd.DataFrame(rader)
@@ -78,11 +80,7 @@ def fetch_saker(kommune_key: str, sleep_s: float = 0.5) -> pd.DataFrame:
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) < 2 or sys.argv[1] not in KOMMUNER:
-        print(f"Bruk: python byggesak_fetch.py <kommune>. Tilgjengelige: {list(KOMMUNER.keys())}")
-        print("Ingen kommune er lagt til KOMMUNER ennå - se README for status.")
-        sys.exit(1)
-
-    df = fetch_saker(sys.argv[1])
+    rows = int(sys.argv[1]) if len(sys.argv) > 1 else 100
+    df = fetch_saker(rows=rows)
     df.to_csv("data/saker.csv", index=False)
     print(f"Lagret {len(df)} byggesaker til data/saker.csv")
