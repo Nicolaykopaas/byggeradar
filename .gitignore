@@ -6,3 +6,4 @@ data/*.csv
 data/email_drafts/
 !data/.gitkeep
 .claude/
+*.log
