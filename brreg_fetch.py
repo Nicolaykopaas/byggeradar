@@ -67,7 +67,9 @@ def fetch_bedrifter(kommunenummer: str, nace_koder: dict = None, sleep_s: float 
             page += 1
             time.sleep(sleep_s)
 
-    df = pd.DataFrame(rader).drop_duplicates(subset="organisasjonsnummer")
+    # NB: dedupe på (org.nr, nace) - ikke bare org.nr - siden en bedrift kan drive
+    # flere aktuelle håndverksfag og skal være kandidat for saker i alle sine bransjer.
+    df = pd.DataFrame(rader).drop_duplicates(subset=["organisasjonsnummer", "nace_kode"])
     return df
 
 

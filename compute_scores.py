@@ -3,6 +3,7 @@
 Input: data/saker.csv (fra byggesak_fetch.py), data/bedrifter.csv (fra brreg_fetch.py)
 Output: data/matches.csv, sortert synkende på score
 """
+import re
 import pandas as pd
 
 # Sakstype (fritekst fra kommunen) -> aktuell NACE-bransje.
@@ -32,7 +33,8 @@ VEKT_STORRELSE = 10
 def gjett_nace_fra_sakstype(sakstype: str) -> str | None:
     sakstype_lower = (sakstype or "").lower()
     for nokkelord, nace in SAKSTYPE_TIL_NACE.items():
-        if nokkelord in sakstype_lower:
+        # \b foran nøkkelordet unngår falske treff som "mal" i "normal" eller "tak" i "kontakt"
+        if re.search(rf"\b{re.escape(nokkelord)}", sakstype_lower):
             return nace
     return None
 
@@ -78,6 +80,13 @@ def compute_scores(saker: pd.DataFrame, bedrifter: pd.DataFrame) -> pd.DataFrame
                 "telefon": bedrift.get("telefon"),
                 "score": round(score, 1),
             })
+
+    MATCH_KOLONNER = [
+        "sak_id", "sak_adresse", "sakstype", "saksdato", "organisasjonsnummer",
+        "bedrift_navn", "bransje", "epost", "telefon", "score",
+    ]
+    if not rader:
+        return pd.DataFrame(columns=MATCH_KOLONNER)
 
     matches = pd.DataFrame(rader).sort_values("score", ascending=False)
     return matches

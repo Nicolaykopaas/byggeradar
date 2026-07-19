@@ -3,6 +3,7 @@
 Input: data/matches.csv, data/kontaktet.csv (for å unngå dobbel kontakt)
 Output: én .txt-fil per match i data/email_drafts/
 """
+import hashlib
 import os
 import re
 import pandas as pd
@@ -24,7 +25,11 @@ Byggesaksradar
 
 
 def trygg_filnavn(tekst: str) -> str:
-    return re.sub(r"[^a-zA-Z0-9_-]", "_", tekst)[:80]
+    # Kort hash av HELE originalteksten sikrer unikhet selv om to lange
+    # tekster (f.eks. URL-er som sak_id) deler samme 50-tegns prefiks.
+    hash_suffix = hashlib.sha1(tekst.encode("utf-8")).hexdigest()[:8]
+    lesbar_del = re.sub(r"[^a-zA-Z0-9_-]", "_", tekst)[:50]
+    return f"{lesbar_del}_{hash_suffix}"
 
 
 def generer_utkast(matches: pd.DataFrame, kontaktet: pd.DataFrame, output_dir: str = "data/email_drafts", topp_n: int = 1):
