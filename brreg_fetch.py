@@ -55,6 +55,8 @@ def fetch_bedrifter(kommunenummer: str, nace_koder: dict = None, sleep_s: float 
                     "postnummer": adresse.get("postnummer"),
                     "poststed": adresse.get("poststed"),
                     "hjemmeside": e.get("hjemmeside"),
+                    "epost": e.get("epostadresse"),
+                    "telefon": e.get("telefon") or e.get("mobil"),
                     "antall_ansatte": e.get("antallAnsatte"),
                     "stiftelsesdato": e.get("stiftelsesdato"),
                 })

@@ -74,6 +74,8 @@ def compute_scores(saker: pd.DataFrame, bedrifter: pd.DataFrame) -> pd.DataFrame
                 "organisasjonsnummer": bedrift.get("organisasjonsnummer"),
                 "bedrift_navn": bedrift.get("navn"),
                 "bransje": bedrift.get("bransje"),
+                "epost": bedrift.get("epost"),
+                "telefon": bedrift.get("telefon"),
                 "score": round(score, 1),
             })
 

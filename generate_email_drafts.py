@@ -7,7 +7,8 @@ import os
 import re
 import pandas as pd
 
-EMAIL_MAL = """Emne: Ny jobbmulighet i {sak_adresse}
+EMAIL_MAL = """Til: {epost}
+Emne: Ny jobbmulighet i {sak_adresse}
 
 Hei {bedrift_navn},
 
@@ -38,6 +39,7 @@ def generer_utkast(matches: pd.DataFrame, kontaktet: pd.DataFrame, output_dir: s
                 continue
 
             innhold = EMAIL_MAL.format(
+                epost=rad.get("epost") or "(mangler e-post - sjekk manuelt)",
                 bedrift_navn=rad["bedrift_navn"],
                 sak_adresse=rad["sak_adresse"],
                 sakstype=rad["sakstype"],
