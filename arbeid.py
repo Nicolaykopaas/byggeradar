@@ -85,6 +85,36 @@ TILTAK = [
 # Rene papir-/administrasjonssaker uten fysisk arbeid.
 ADMIN = re.compile(r"\b(seksjoner|deling av|grensejustering|dispensasjon|forhåndskonferanse|matrikkel|utgår|klage)", re.I)
 
+# --- Tilgjengelighet: er jobben trolig ledig eller allerede tatt? ---------
+# VIKTIG ærlighet: det definitive signalet (ansvarlig utførende foretak) ligger i
+# saksdokumenter som robots.txt blokkerer. Vi kan derfor KUN se de sakene som
+# tittelen røper er i sen fase. Alt annet er ærlig "uavklart" - vi lover aldri
+# at en jobb er ledig.
+_TATT = re.compile(
+    r"ferdigattest|brukstillatelse|igangsettingstillatelse|\bigangsetting\b|"
+    r"endring av (gitt )?(tillatelse|løyve|ramme)|endringssøknad|midlertidig", re.I)
+_TIDLIG = re.compile(
+    r"forhåndskonferanse|prinsipiell|forespørsel|avklaring|veiledning|"
+    r"rammesøknad|rammetillatelse", re.I)
+
+
+def tilgjengelighet(sakstype: str, naeringsvennlig: bool = False) -> dict:
+    """Ærlig signal om jobben er ledig. niva ∈ {tatt, tidlig, uavklart}."""
+    t = sakstype or ""
+    if _TATT.search(t):
+        return {"niva": "tatt", "etikett": "Trolig allerede i gang",
+                "forklaring": "Sen fase i saken – arbeidet er trolig alt tildelt. Lite å hente her."}
+    if _TIDLIG.search(t):
+        return {"niva": "tidlig", "etikett": "Svært tidlig",
+                "forklaring": "Ingenting er avgjort ennå – ingen konkret jobb å ta på dette stadiet."}
+    if naeringsvennlig:
+        return {"niva": "uavklart", "etikett": "Hovedjobb trolig tildelt – sub/leverandør mulig",
+                "forklaring": "Større prosjekt har som regel en ansvarlig entreprenør. Realistisk "
+                              "vei inn: tilby deg som underentreprenør/leverandør til foretaket."}
+    return {"niva": "uavklart", "etikett": "Uavklart – må sjekkes",
+            "forklaring": "Offentlig data kan ikke bekrefte om jobben er ledig. Åpne saken hos "
+                          "kommunen for å se om ansvarlig utførende alt er på plass."}
+
 
 def analyser_arbeid(sakstype: str) -> list[dict]:
     """Returnerer liste av gjenkjente tiltak: {navn, oppgaver, fag}. Kan være tom."""

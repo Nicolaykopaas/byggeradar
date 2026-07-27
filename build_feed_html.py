@@ -36,6 +36,9 @@ def bygg() -> str:
         "naering": r["naeringsvennlig"], "mulighet": r["mulighet"],
         "status": r.get("status") or "", "fersk": ferskhet_etikett(r["dager_siden"]),
         "arbeid": r["arbeid"]["overskrift"], "oppgaver": r["arbeid"]["oppgaver"],
+        "tilg_niva": r["tilgjengelighet"]["niva"],
+        "tilg_etikett": r["tilgjengelighet"]["etikett"],
+        "tilg_forklaring": r["tilgjengelighet"]["forklaring"],
         "tips": r["tips"],
     } for r in rader]
 
@@ -80,13 +83,20 @@ def bygg() -> str:
   .arbeid-t {{ color:#334155; margin-bottom:4px; }}
   .arbeid ul {{ margin:0; padding-left:18px; color:var(--grå); columns:2; column-gap:16px; }}
   .arbeid li {{ font-size:.8rem; }}
-  .tips {{ font-size:.86rem; color:#475569; background:#f8fafc; border-left:3px solid var(--bla); border-radius:0 6px 6px 0; padding:8px 10px; margin-top:auto; }}
+  .tilg {{ font-size:.83rem; border-radius:8px; padding:8px 10px; margin-top:auto; }}
+  .tilg-uavklart {{ background:#eff6ff; color:#1e3a8a; }}
+  .tilg-tidlig {{ background:#fef9c3; color:#713f12; }}
+  .tilg-tatt {{ background:#fee2e2; color:#7f1d1d; }}
+  .tips {{ font-size:.86rem; color:#475569; background:#f8fafc; border-left:3px solid var(--bla); border-radius:0 6px 6px 0; padding:8px 10px; }}
   .tom {{ padding:48px 20px; text-align:center; color:var(--grå); }}
   footer {{ color:var(--grå); font-size:.82rem; padding:24px 20px 40px; text-align:center; }}
   @media (prefers-color-scheme:dark) {{
     :root {{ --tekst:#e2e8f0; --bg:#0f172a; --kort:#1e293b; --kant:#334155; --grå:#94a3b8; }}
     .mulighet {{ background:#1e3a8a; color:#bfdbfe; }} .meta {{ color:#cbd5e1; }}
     .arbeid-t {{ color:#cbd5e1; }}
+    .tilg-uavklart {{ background:#0f2544; color:#bfdbfe; }}
+    .tilg-tidlig {{ background:#422006; color:#fde68a; }}
+    .tilg-tatt {{ background:#450a0a; color:#fecaca; }}
     .tips {{ background:#0f172a; color:#cbd5e1; }} .naering {{ background:#14532d; color:#bbf7d0; }}
   }}
 </style></head>
@@ -104,13 +114,15 @@ def bygg() -> str:
       <select id="omrade"><option value="">Hele Bergen</option>{"".join(f'<option>{p}</option>' for p in postnr)}</select></div>
     <label class="sjekk"><input type="checkbox" id="kunStore"/> Kun store prosjekter</label>
     <label class="sjekk"><input type="checkbox" id="kunNaering"/> Kun kontaktbart foretak</label>
+    <label class="sjekk"><input type="checkbox" id="skjulTatt" checked/> Skjul tidlige/trolig tatte</label>
     <span class="teller" id="teller"></span>
   </div></div></div>
 
   <main class="wrap">
-    <div class="forklar">Høy «mulighet» = ferskt, stort og treffer ditt fag. Adresser er anonymisert til
-       postnummer – ingen personopplysninger vises. Grønn merkelapp = større prosjekt der ansvarlig
-       foretak (en bedrift) er offentlig i saksdokumentene og lovlig å kontakte.</div>
+    <div class="forklar">Høy «mulighet» = ferskt, stort og treffer ditt fag. Adresser er anonymisert til postnummer.
+       <b>Ærlig om «ledig vs tatt»:</b> offentlig data kan ikke bekrefte om en jobb allerede har entreprenør –
+       det står i saksdokumenter kommunen ikke gjør søkbare. Vi skjuler de vi <i>kan</i> se er tidlige eller
+       ferdige, og merker resten «uavklart – sjekk saken». Vi lover aldri at en jobb er ledig.</div>
     <div class="grid" id="grid"></div>
     <div class="tom" id="tom" style="display:none"></div>
   </main>
@@ -129,6 +141,8 @@ function kort(r) {{
     ? `<div class="arbeid"><div class="arbeid-t">🛠️ Arbeid som inngår: <b>${{esc(r.arbeid)}}</b></div>
          <ul>${{r.oppgaver.map(o => `<li>${{esc(o)}}</li>`).join("")}}</ul></div>`
     : `<div class="arbeid"><div class="arbeid-t">${{esc(r.arbeid)}}</div></div>`;
+  const tilg = `<div class="tilg tilg-${{r.tilg_niva}}"><b>${{esc(r.tilg_etikett)}}</b><br>${{esc(r.tilg_forklaring)}}</div>`;
+  const tips = (r.tilg_niva === "uavklart") ? `<div class="tips">💡 ${{esc(r.tips)}}</div>` : "";
   return `<article class="kort">
     <div class="kort-topp">
       <span class="mulighet" title="Hvor verdt det er å følge opp (0-100)">${{r.mulighet}}</span>
@@ -139,18 +153,21 @@ function kort(r) {{
     <div class="meta">📍 Postnr <strong>${{esc(r.omrade)}}</strong>${{status}}</div>
     <div class="tags">${{tags}} ${{naering}}</div>
     ${{oppgaver}}
-    <div class="tips">💡 ${{esc(r.tips)}}</div>
+    ${{tilg}}
+    ${{tips}}
   </article>`;
 }}
 
 function tegn() {{
   const fag = $("fag").value, omrade = $("omrade").value;
   const kunStore = $("kunStore").checked, kunNaering = $("kunNaering").checked;
+  const skjulTatt = $("skjulTatt").checked;
   const treff = DATA.filter(r =>
     (!fag || r.bransjer.includes(fag)) &&
     (!omrade || r.omrade === omrade) &&
     (!kunStore || r.skala === "stor") &&
-    (!kunNaering || r.naering));
+    (!kunNaering || r.naering) &&
+    (!skjulTatt || r.tilg_niva === "uavklart"));
   $("grid").innerHTML = treff.map(kort).join("");
   $("teller").textContent = treff.length + (treff.length === 1 ? " treff" : " treff");
   const tom = $("tom");
@@ -161,7 +178,7 @@ function tegn() {{
       " akkurat nå.<br>Prøv et større område, eller kom tilbake i morgen – lista oppdateres daglig.";
   }} else {{ tom.style.display = "none"; }}
 }}
-["fag","omrade","kunStore","kunNaering"].forEach(id => $(id).addEventListener("input", tegn));
+["fag","omrade","kunStore","kunNaering","skjulTatt"].forEach(id => $(id).addEventListener("input", tegn));
 tegn();
 </script>
 </body></html>"""

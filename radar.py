@@ -9,7 +9,7 @@ upersonlige felt (arbeidsbeskrivelse/tittel, status, dato). Se CLAUDE.md.
 """
 import re
 
-from arbeid import arbeidssammendrag
+from arbeid import arbeidssammendrag, tilgjengelighet
 from feed import bygg_feed_rader
 
 # Skala utledes KUN fra arbeidsbeskrivelsen (tittelen), aldri fra hvem som søker.
@@ -88,6 +88,7 @@ def bygg_radar(fag: list[str] = None, omrade_prefiks: str = "",
             "naeringsvennlig": naering,
             "mulighet": mulighet,
             "arbeid": arbeidssammendrag(r["sakstype"]),  # {overskrift, oppgaver[], fag[]}
+            "tilgjengelighet": tilgjengelighet(r["sakstype"], naering),  # {niva, etikett, forklaring}
             "tips": handling_tips(r["omrade"], skala, naering),
         })
 

@@ -29,11 +29,14 @@ with st.sidebar:
     omrade = st.selectbox("Område (postnr)", ["Hele Bergen"] + alle_postnr)
     min_mulighet = st.slider("Minimum mulighet", 0, 100, 40)
     maks_dager = st.slider("Maks alder (dager)", 1, 60, 30)
+    skjul_tatt = st.checkbox("Skjul tidlige/trolig tatte", value=True)
     st.caption("«Mulighet» = ferskt + stort + treffer ditt fag.")
 
 prefiks = "" if omrade == "Hele Bergen" else omrade
 rader = bygg_radar(fag=fag or None, omrade_prefiks=prefiks,
                    min_mulighet=min_mulighet, maks_dager=maks_dager)
+if skjul_tatt:
+    rader = [r for r in rader if r["tilgjengelighet"]["niva"] == "uavklart"]
 s = ukesammendrag(rader)
 
 k = st.columns(4)
@@ -67,4 +70,8 @@ for i, r in enumerate(rader):
             st.caption(a["overskrift"])
         if r["naeringsvennlig"]:
             st.success("✓ Kontaktbart foretak i saksdokumentene")
-        st.info(f"💡 {r['tips']}")
+        tg = r["tilgjengelighet"]
+        boks = {"tatt": st.error, "tidlig": st.warning, "uavklart": st.info}[tg["niva"]]
+        boks(f"**{tg['etikett']}** — {tg['forklaring']}")
+        if tg["niva"] == "uavklart":
+            st.caption(f"💡 {r['tips']}")
