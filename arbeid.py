@@ -98,13 +98,13 @@ _TIDLIG = re.compile(
     r"rammesøknad|rammetillatelse", re.I)
 
 
-def tilgjengelighet(sakstype: str, naeringsvennlig: bool = False,
-                    profesjonell_soker=None) -> dict:
+def tilgjengelighet(sakstype: str, profesjonell_soker=None) -> dict:
     """Ærlig signal om jobben er ledig. niva ∈ {tatt, tidlig, uavklart}.
 
-    profesjonell_soker: True = ansvarlig søker er et foretak (proff alt inne →
-    hovedjobb trolig tatt), False = privat søker (ingen proff registrert →
-    størst sjanse for at de vil hyre hjelp), None = ukjent.
+    ETT signal styrer dette: hvem som faktisk står som ansvarlig søker. Vi bruker
+    IKKE prosjektstørrelse her (det ga selvmotsigende kort). profesjonell_soker:
+    True = foretak som søker (proff alt inne → hovedjobb trolig tatt), False =
+    privat søker (ingen proff registrert → størst sjanse for at de vil hyre), None = ukjent.
     """
     t = sakstype or ""
     if _TATT.search(t):
@@ -114,14 +114,12 @@ def tilgjengelighet(sakstype: str, naeringsvennlig: bool = False,
         return {"niva": "tidlig", "etikett": "Svært tidlig",
                 "forklaring": "Ingenting er avgjort ennå – ingen konkret jobb å ta på dette stadiet."}
 
-    # Proff søker (eller stort prosjekt) → hovedjobb trolig tatt, men sub/leverandør mulig
-    if profesjonell_soker or naeringsvennlig:
+    if profesjonell_soker is True:
         return {"niva": "uavklart", "etikett": "Proff søker inne – hovedjobb trolig tatt",
                 "forklaring": "Ansvarlig søker er et foretak, så en entreprenør er som regel alt "
                               "inne. Realistisk vei inn: tilby deg som underentreprenør/leverandør."}
-    # Privat søker → ingen proff registrert ennå = størst sjanse for at de vil ha håndverker
     if profesjonell_soker is False:
-        return {"niva": "uavklart", "etikett": "Privat søker – kan trenge håndverker",
+        return {"niva": "uavklart", "etikett": "Trolig ledig – privat søker",
                 "forklaring": "Ingen profesjonell søker registrert – størst sjanse for at "
                               "tiltakshaver faktisk vil hyre inn. Vær synlig lokalt (§15 hindrer "
                               "kald e-post til privatpersoner)."}

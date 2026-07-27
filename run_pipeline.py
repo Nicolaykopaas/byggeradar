@@ -4,12 +4,17 @@ Kjøres daglig av Task Scheduler / cron. Hvert steg logges, og en statusfil
 (data/pipeline_status.json) skrives til slutt slik at selftest.py og
 helsesjekk.py kan lese hva som gikk bra/galt uten å tolke loggen.
 
-Brreg-data endrer seg lite fra dag til dag, så bedrifter.csv oppdateres kun hvis
-den mangler eller er eldre enn BEDRIFTER_MAKS_ALDER_DAGER. Byggesaker hentes hver gang.
+Byggesaker hentes fra ALLE registrerte kilde-adaptere (kilder/*.py) hver gang,
+og bedrifter hentes fra Brreg for hver kommune som en kilde dekker. Slik skalerer
+pipelinen til flere kommuner uten endringer her når nye kilder legges til.
+
+Brreg-data endrer seg lite fra dag til dag, så bedrifter.csv (hele det samlede
+datasettet) oppdateres kun hvis den mangler eller er eldre enn
+BEDRIFTER_MAKS_ALDER_DAGER. Byggesaker hentes hver gang.
 
 Bruk:
-    python run_pipeline.py            # pilot: Bergen (4601)
-    python run_pipeline.py 4601 150   # kommunenummer + antall saker
+    python run_pipeline.py            # alle registrerte kilder
+    python run_pipeline.py 4601 150   # (kommunenummer beholdt for bakoverkompat) + antall saker
 """
 import json
 import os
@@ -20,9 +25,9 @@ from datetime import datetime, timezone
 import pandas as pd
 
 import brreg_fetch
-import byggesak_fetch
 import compute_scores
 import generate_email_drafts
+import kilder
 from config import DATA_DIR, BERGEN_KOMMUNENUMMER, PATHS
 from logg import get_logger
 
@@ -57,8 +62,14 @@ def kjor_pipeline(kommunenummer: str = BERGEN_KOMMUNENUMMER, rows: int = 150) ->
     }
     os.makedirs(DATA_DIR, exist_ok=True)
 
+    aktive_kilder = kilder.alle_kilder()
+    dekkede_kommuner = sorted({k.kommunenummer for k in aktive_kilder})
+    status["kommuner"] = dekkede_kommuner
+    log.info("Registrerte kilder: %s", ", ".join(k.kommunenavn for k in aktive_kilder) or "(ingen)")
+
     try:
-        # 1) Bedrifter fra Brreg (kun ved behov)
+        # 1) Bedrifter fra Brreg for HVER dekket kommune (kun ved behov).
+        #    Ferskhets-cachen gjelder hele det samlede bedrifter.csv-datasettet.
         if _bedrifter_er_ferske():
             bedrifter = pd.read_csv(PATHS["bedrifter"], dtype={
                 "organisasjonsnummer": str, "nace_kode": str,
@@ -67,18 +78,28 @@ def kjor_pipeline(kommunenummer: str = BERGEN_KOMMUNENUMMER, rows: int = 150) ->
             log.info("Bruker eksisterende bedrifter.csv (%d rader, fersk nok)", len(bedrifter))
             status["steg"]["brreg"] = "hoppet over (fersk)"
         else:
-            log.info("Henter bedrifter fra Brreg for kommune %s ...", kommunenummer)
-            bedrifter = brreg_fetch.fetch_bedrifter(kommunenummer)
+            deler = []
+            for kilde in aktive_kilder:
+                log.info("Henter bedrifter fra Brreg for %s (%s) ...",
+                         kilde.kommunenavn, kilde.kommunenummer)
+                deler.append(brreg_fetch.fetch_bedrifter(kilde.kommunenummer))
+            bedrifter = (pd.concat(deler, ignore_index=True)
+                         if deler else pd.DataFrame())
             bedrifter.to_csv(PATHS["bedrifter"], index=False)
-            log.info("Lagret %d bedrifter", len(bedrifter))
+            log.info("Lagret %d bedrifter (%d kommuner)", len(bedrifter), len(dekkede_kommuner))
             status["steg"]["brreg"] = "ok"
         status["tall"]["bedrifter"] = int(len(bedrifter))
 
-        # 2) Byggesaker
-        log.info("Henter byggesaker (rows=%d) ...", rows)
-        saker = byggesak_fetch.fetch_saker(rows=rows)
+        # 2) Byggesaker fra ALLE registrerte kilder -> samlet, flerkommune saker.csv
+        log.info("Henter byggesaker fra %d kilde(r) (rows=%d) ...", len(aktive_kilder), rows)
+        rader = []
+        for kilde in aktive_kilder:
+            kilde_rader = kilde.fetch_saker(rows)
+            log.info("  %s: %d byggesaker", kilde.kommunenavn, len(kilde_rader))
+            rader += kilde_rader
+        saker = pd.DataFrame(rader, columns=kilder.base.SAK_KOLONNER)
         saker.to_csv(PATHS["saker"], index=False)
-        log.info("Lagret %d byggesaker", len(saker))
+        log.info("Lagret %d byggesaker totalt", len(saker))
         status["steg"]["byggesaker"] = "ok"
         status["tall"]["saker"] = int(len(saker))
         if saker.empty:

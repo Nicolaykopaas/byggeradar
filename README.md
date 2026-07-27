@@ -1,6 +1,8 @@
 # Byggeradar
 
-Kuratert oversikt over nye byggetillatelser i Bergen, matchet mot håndverksfag fra Brreg.
+Kuratert, landsdekkende oversikt over nye byggetillatelser i norske kommuner, matchet mot
+håndverksfag fra Brreg. Én kilde-adapter per kommune (`kilder/`), så flere kommuner legges til
+uten å endre resten. Pilot kjører mot Bergen; grensesnittet er allerede flerkommune/landsdekkende.
 Se [CLAUDE.md](CLAUDE.md) for arkitektur og regler.
 
 ## Produktdreining (viktig)
@@ -11,15 +13,36 @@ en privatperson, §/GDPR), jobben er ofte allerede kontrahert, og bare 6 % av be
 e-postbare. Vi solgte i praksis en betalingsmur foran offentlig info.
 
 **Ny retning:** et *gratis, kuraterende verktøy* i stedet for en betalingsmur. Kjernen er
-[radar.py](radar.py): den leser hver nye byggesak, kaster bort støyen, og løfter fram de få
-prosjektene som er verdt tiden din – rangert på **mulighet** (ferskt + stort + treffer ditt fag),
-med et **ærlig, lovlig handlingstips** per prosjekt. Store prosjekter merkes «kontaktbart foretak»
-(der ansvarlig søkerforetak – en bedrift, ikke en privatperson – er offentlig i saksdokumentene).
+[radar.py](radar.py): den leser hver nye byggesak i hele Norge, kaster bort støyen, og løfter fram
+de få prosjektene som er verdt tiden din – rangert på **mulighet** (ferskt + stort + treffer ditt
+fag), med et **ærlig, lovlig handlingstips** per prosjekt. Store prosjekter merkes «kontaktbart
+foretak» (der ansvarlig søkerforetak – en bedrift, ikke en privatperson – er offentlig i
+saksdokumentene).
 
 Åpne den:
 ```bash
 python build_feed_html.py     # bygger + åpner feed/index.html (statisk, dobbeltklikkbar)
-streamlit run finn_feed.py    # interaktiv «Din radar» med filtre på fag/område
+streamlit run finn_feed.py    # interaktiv «Din radar» med filtre på fag/geografi
+```
+
+### Filtre og lenke (begge visningene)
+
+Både den statiske siden og Streamlit-appen har de samme filtrene, og alle filtrerer det faktiske
+datasettet (ingen «døde» kontroller – dekket av `test_feed_filtre.py`):
+
+- **Fag** – bare prosjekter som treffer ditt håndverksfag.
+- **Fylke** og **Kommune** – geografi, «Hele Norge» som standard. Kommune-listen kaskaderer på valgt
+  fylke. Filtrering skjer på `kommunenummer`/`fylke`; kommunenavn/fylke slås opp via
+  `kilder.kommune_info()`, så datasettet trenger ikke egne navnekolonner.
+- **Postnr**, **Kun trolig ledige** (privat søker), **Kun store prosjekter**, **Skjul tidlige/tatte**.
+
+Hvert prosjektkort har en klikkbar **🔗 Se saken hos kommunen** som åpner kommunens egen offentlige
+saksside (`kilde_url`, ny fane). Vår egen visning er postnr-anonymisert – full gateadresse skrives
+aldri ut – men lenken til kommunens side er offentlig og alltid med.
+
+Test at filtrene og lenken virker:
+```bash
+python test_feed_filtre.py    # 12 tester: hvert filter, ekte http(s)-lenke, ingen adresse-lekkasje
 ```
 
 Monetisering kommer *etter* at verktøyet er nyttig nok til at folk bruker det: en billig

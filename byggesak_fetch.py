@@ -1,129 +1,36 @@
-"""Henter nye byggesaker fra Bergen kommunes saksinnsyn-API.
+"""Bakoverkompatibel wrapper rundt Bergen-kilden (kilder/bergen.py).
 
-Verifisert: robots.txt for bergen.kommune.no blokkerer kun
-/innsynplanogbyggesak/api/fil/* og /innsynplanogbyggesak/api/saksgang -
-selve søke-API-et (/api/saker) er ikke omfattet.
+Bergen-logikken bor nå i kilde-adapteren `kilder.bergen.BergenKilde` slik at
+pipelinen kan skalere til flere kommuner (se kilder/base.py). Denne modulen
+beholdes som en tynn fasade så eksisterende importer (helsesjekk.py, m.fl.)
+fortsatt virker: `fetch_saker(rows, sleep_s)` returnerer som før en pandas
+DataFrame, og __main__ skriver fortsatt data/saker.csv.
 
-Trondheim (trondheim.innsynsportal.no) og Oslo PBE
-(innsyn.pbe.oslo.kommune.no) er UTELUKKET - begge har robots.txt
-"Disallow: /" og skal ikke skrapes.
-
-VIKTIG (personvern): "tiltakshaver" (navnet på privatpersonen som søker) er en
-personopplysning og leses ALDRI ut / lagres aldri. Feltet "soker" (ansvarlig
-søker) leses KUN for å utlede én boolean - `profesjonell_soker` (ser søkeren ut
-som et foretak, ja/nei) - som brukes til å anslå om jobben trolig alt er tildelt.
-Selve navnet lagres aldri; kun ja/nei-flagget havner i saker.csv. Dette er avklart
-og ønsket (jf. brukerbeslutning), og holder oss innenfor personvernregelen.
-
-Output: data/saker.csv
+VIKTIG (personvern): tiltakshaver leses aldri. Feltet "soker" leses kun for å
+utlede boolean-flagget `profesjonell_soker`. Se kilder/bergen.py.
 """
-import re
-import time
-from datetime import datetime, timezone
-
-import requests
 import pandas as pd
 
-BERGEN_KOMMUNENUMMER = "4601"
-BERGEN_API_URL = "https://www.bergen.kommune.no/innsynplanogbyggesak/api/saker"
-BERGEN_SAK_URL_MAL = "https://www.bergen.kommune.no/omkommunen/offentlig-innsyn/innsynplanogbyggesak/saksinnsyn/sak/{saksnr}"
+from kilder import base
+from kilder.bergen import BergenKilde, BERGEN_API_URL, BERGEN_SAK_URL_MAL
 
-# Kommunens API timer av og til ut. Ett feilet kall skal ikke rive ned pipelinen.
-REQUEST_TIMEOUT = 30
+# Bakoverkompatible modulnavn (noe kan importere disse).
+BERGEN_KOMMUNENUMMER = BergenKilde.kommunenummer
 
-
-def _get_med_retry(url, params, timeout=REQUEST_TIMEOUT, forsok=3):
-    """requests.get med eksponentiell backoff (1s, 2s, 4s) ved nettverksfeil.
-
-    Prøver på nytt ved requests.exceptions.RequestException (timeout/connection).
-    Hever siste feil hvis alle forsøk feiler.
-    """
-    siste_feil = None
-    for n in range(forsok):
-        try:
-            return requests.get(url, params=params, timeout=timeout)
-        except requests.exceptions.RequestException as feil:
-            siste_feil = feil
-            if n < forsok - 1:
-                time.sleep(2 ** n)  # 1s, 2s, 4s, ...
-    raise siste_feil
-
-
-def _hent_postnummer(adresse_liste) -> str | None:
-    """Adressefeltet fra API-et er på formen 'Gateveien 1, 5230 Paradis'."""
-    if not adresse_liste:
-        return None
-    match = re.search(r"(\d{4})\s+\S", adresse_liste[0])
-    return match.group(1) if match else None
-
-
-def _hent_gateadresse(adresse_liste) -> str | None:
-    if not adresse_liste:
-        return None
-    return adresse_liste[0].split(",")[0].strip()
-
-
-# Foretaks-kjennetegn: selskapsformer (hele ord) + typiske bransjeord i firmanavn.
-_FORETAK = re.compile(
-    r"\b(AS|ASA|ANS|DA|BA|SA|NUF|KS|ENK)\b|BYGG|ENTREPREN|EIENDOM|PROSJEKT|"
-    r"UTVIKLING|HOLDING|GRUPPEN|INVEST|ANLEGG|MASKIN|ARKITEKT|BOLIG|TOMTE", re.I)
-
-
-def _er_profesjonell_soker(soker) -> bool:
-    """Leser KUN for å utlede ja/nei - navnet lagres aldri (se personvern-notat øverst).
-
-    True hvis ansvarlig søker ser ut som et foretak (AS o.l.), False hvis det ser ut
-    som en privatperson eller mangler. Brukes til å anslå «ledig vs tatt».
-    """
-    if not soker:
-        return False
-    tekst = " ".join(soker) if isinstance(soker, list) else str(soker)
-    return bool(_FORETAK.search(tekst))
+# Delte hjelpere ligger nå i kilder.base - re-eksporteres under sine gamle navn
+# for moduler/tester som fortsatt importerer dem herfra.
+_get_med_retry = base.get_med_retry
+_er_profesjonell_soker = base.er_profesjonell_soker
 
 
 def fetch_saker(rows: int = 100, sleep_s: float = 0.3) -> pd.DataFrame:
-    """Hent de `rows` sist innkomne byggesakene fra Bergen, nyest først."""
-    params = {
-        "tekst": "BYGG",  # matcher saksnr-prefiks BYGG-YYYY/NNNN, dvs. alle byggesaker
-        "start": 0,
-        "rows": rows,
-        "orderBy": "saksdato",
-        "asc": "false",
-    }
-    resp = _get_med_retry(BERGEN_API_URL, params)
-    resp.raise_for_status()
-    time.sleep(sleep_s)
+    """Hent de `rows` sist innkomne byggesakene fra Bergen som DataFrame.
 
-    items = resp.json().get("items", [])
-    rader = []
-    for sak in items:
-        saksnr = sak.get("saksnr")
-        # Fritekstsøket "BYGG" drar også inn henvendelser (HENV-), klager (KLAGE-) og
-        # tilsyn (TILSYN-) fordi ordet "bygg" står i tittelen. Det er ikke reelle
-        # byggetillatelser og gir verdiløse leads - behold kun ekte byggesaker (BYGG-).
-        if not (saksnr and str(saksnr).startswith("BYGG-")):
-            continue
-        saksdato_ms = sak.get("saksdato")
-        saksdato = (
-            datetime.fromtimestamp(saksdato_ms / 1000, tz=timezone.utc).date().isoformat()
-            if saksdato_ms else None
-        )
-        adresse_liste = sak.get("adresse") or []
-
-        rader.append({
-            "sak_id": saksnr,
-            "kommunenummer": BERGEN_KOMMUNENUMMER,
-            "postnummer": _hent_postnummer(adresse_liste),
-            "adresse": _hent_gateadresse(adresse_liste),
-            "saksdato": saksdato,
-            "sakstype": sak.get("tittel"),
-            "status": sak.get("status"),  # f.eks. "Under behandling" / "Avsluttet"
-            # KUN boolean - navnet på søker lagres aldri (personvern, se toppen):
-            "profesjonell_soker": _er_profesjonell_soker(sak.get("soker")),
-            "kilde_url": BERGEN_SAK_URL_MAL.format(saksnr=saksnr) if saksnr else None,
-        })
-
-    return pd.DataFrame(rader)
+    Delegerer til BergenKilde().fetch_saker og pakker listen i en DataFrame
+    (samme returtype som før flytten til kilde-adaptere).
+    """
+    rader = BergenKilde().fetch_saker(rows=rows, sleep_s=sleep_s)
+    return pd.DataFrame(rader, columns=base.SAK_KOLONNER)
 
 
 if __name__ == "__main__":

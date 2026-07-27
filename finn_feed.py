@@ -14,7 +14,7 @@ from radar import bygg_radar, ukesammendrag
 
 st.set_page_config(page_title="Byggeradar", layout="wide")
 st.title("Byggeradar")
-st.caption("Vi leser hver nye byggesak i Bergen så du slipper. Her er de som er verdt tiden din.")
+st.caption("Vi leser hver nye byggetillatelse i hele Norge så du slipper. Her er de som er verdt tiden din.")
 
 _alle = bygg_feed_rader()
 if not _alle:
@@ -22,21 +22,34 @@ if not _alle:
     st.stop()
 
 alle_fag = sorted({b for r in _alle for b in r["bransjer"]})
-alle_postnr = sorted({r["omrade"] for r in _alle})
+alle_fylker = sorted({r["fylke"] for r in _alle if r.get("fylke")})
+alle_postnr = sorted({r["postnummer"] for r in _alle if r.get("postnummer")})
+# (fylke, kommunenavn, kommunenummer) - navn vises, nummer filtrerer vi på
+kommune_trip = sorted({(r["fylke"], r["kommunenavn"], r["kommunenummer"])
+                       for r in _alle if r.get("kommunenavn") and r.get("kommunenummer")})
 
 with st.sidebar:
     st.header("Din radar")
     fag = st.multiselect("Ditt fag", alle_fag)
-    omrade = st.selectbox("Område (postnr)", ["Hele Bergen"] + alle_postnr)
+    valgt_fylke = st.selectbox("Fylke", ["Hele Norge"] + alle_fylker)
+    # Kommune-listen kaskaderer på valgt fylke
+    kommuner = [(navn, nr) for (fyl, navn, nr) in kommune_trip
+                if valgt_fylke == "Hele Norge" or fyl == valgt_fylke]
+    kommune_navn = st.selectbox("Kommune", ["Alle kommuner"] + [navn for navn, _ in kommuner])
+    omrade = st.selectbox("Område (postnr)", ["Alle postnr"] + alle_postnr)
     min_mulighet = st.slider("Minimum mulighet", 0, 100, 40)
     maks_dager = st.slider("Maks alder (dager)", 1, 60, 30)
     skjul_tatt = st.checkbox("Skjul tidlige/trolig tatte", value=True)
     kun_ledig = st.checkbox("Kun trolig ledige (privat søker)", value=False)
     st.caption("«Mulighet» = ferskt + stort + treffer ditt fag.")
 
-prefiks = "" if omrade == "Hele Bergen" else omrade
+fylke = None if valgt_fylke == "Hele Norge" else valgt_fylke
+knr_map = {navn: nr for navn, nr in kommuner}
+kommunenummer = knr_map.get(kommune_navn)  # None ved "Alle kommuner"
+prefiks = "" if omrade == "Alle postnr" else omrade
 rader = bygg_radar(fag=fag or None, omrade_prefiks=prefiks,
-                   min_mulighet=min_mulighet, maks_dager=maks_dager)
+                   min_mulighet=min_mulighet, maks_dager=maks_dager,
+                   kommunenummer=kommunenummer, fylke=fylke)
 if skjul_tatt:
     rader = [r for r in rader if r["tilgjengelighet"]["niva"] == "uavklart"]
 if kun_ledig:
@@ -62,7 +75,7 @@ with st.expander("📬 Få ukentlig varsel på e-post – gratis å komme i gang
             st.error("Skriv inn en gyldig e-postadresse.")
         else:
             kunder.legg_til_kunde(
-                epost=e.strip(), kommunenummer="4601",
+                epost=e.strip(), kommunenummer=kommunenummer or "4601",
                 postnummer_prefiks=valgt_postnr.strip(),
                 bransjer=";".join(valgt_fag), min_score=40, aktiv="interessent")
             st.success("Takk! Du er registrert som interessent. Vi tar kontakt før første utsending.")
@@ -78,7 +91,8 @@ for i, r in enumerate(rader):
     with kol[i % 3].container(border=True):
         st.markdown(f"**{r['mulighet']}** · {SKALA_EMOJI[r['skala']]} {r['skala_etikett']} · {ferskhet_etikett(r['dager_siden'])}")
         st.markdown(f"#### {r['sakstype']}")
-        linje = f"📍 Postnr **{r['omrade']}**"
+        sted = f"{r['kommunenavn']} · Postnr **{r['omrade']}**" if r.get("kommunenavn") else f"Postnr **{r['omrade']}**"
+        linje = f"📍 {sted}"
         if r.get("status"):
             linje += f" · {r['status']}"
         st.markdown(linje)
@@ -90,10 +104,10 @@ for i, r in enumerate(rader):
             st.markdown("\n".join(f"- {o}" for o in a["oppgaver"]))
         else:
             st.caption(a["overskrift"])
-        if r["naeringsvennlig"]:
-            st.success("✓ Kontaktbart foretak i saksdokumentene")
         tg = r["tilgjengelighet"]
         boks = {"tatt": st.error, "tidlig": st.warning, "uavklart": st.info}[tg["niva"]]
         boks(f"**{tg['etikett']}** — {tg['forklaring']}")
         if tg["niva"] == "uavklart":
             st.caption(f"💡 {r['tips']}")
+        if r.get("kilde_url"):
+            st.markdown(f"[🔗 Se saken hos kommunen]({r['kilde_url']})")

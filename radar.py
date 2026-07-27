@@ -49,34 +49,46 @@ def mulighetsscore(match_score: int, skala: str, dager_siden) -> int:
     return int(max(0, min(100, round(base))))
 
 
-def er_naeringsvennlig(sakstype: str, skala: str) -> bool:
-    """Store prosjekter har som regel et ANSVARLIG FORETAK (offentlig i saksdok) -
-    en bedrift du kan kontakte lovlig, i motsetning til en privat tiltakshaver."""
-    return skala == "stor"
+def handling_tips(omrade: str, proff: bool) -> str:
+    """Handlingstips styrt av ETT signal: hvem som faktisk står som søker.
 
-
-def handling_tips(omrade: str, skala: str, naering: bool) -> str:
-    if naering:
-        return ("Større prosjekt: åpne saken hos kommunen og se etter ansvarlig "
-                "søkerforetak - det er en bedrift du kan kontakte direkte og lovlig.")
-    return (f"Trolig privat tiltakshaver - ikke masse-e-post (§15). Vær synlig i "
-            f"{omrade}: skilt/flyer i området, eller ta direkte kontakt på stedet.")
+    Dette må samsvare med tilgjengelighet() - begge bruker profesjonell_soker,
+    ikke prosjektstørrelse, så kortet aldri motsier seg selv.
+    """
+    if proff:
+        return ("Ansvarlig søker er et foretak - hovedjobben er trolig tildelt. Realistisk "
+                "vei inn: kontakt foretaket og tilby deg som underentreprenør/leverandør.")
+    return (f"Ingen profesjonell søker registrert - størst sjanse for at de vil hyre inn. "
+            f"Ikke masse-e-post til privatpersoner (§15); vær synlig i {omrade} eller ta "
+            f"direkte kontakt på stedet.")
 
 
 def bygg_radar(fag: list[str] = None, omrade_prefiks: str = "",
-               min_mulighet: int = 0, maks_dager: int = 30) -> list[dict]:
-    """Kuraterte, filtrerte prosjekter sortert på mulighetsscore (høyest først)."""
+               min_mulighet: int = 0, maks_dager: int = 30,
+               kommunenummer: str = None, fylke: str = None) -> list[dict]:
+    """Kuraterte, filtrerte prosjekter sortert på mulighetsscore (høyest først).
+
+    Geografi: `kommunenummer` og `fylke` filtrerer landsdekkende data ned til én
+    kommune eller ett fylke (None = hele Norge). `omrade_prefiks` filtrerer videre
+    på postnummer innen valget.
+    """
     rader = []
     for r in bygg_feed_rader():
         if maks_dager and r["dager_siden"] is not None and r["dager_siden"] > maks_dager:
             continue
         if fag and not (set(fag) & set(r["bransjer"])):
             continue
+        if kommunenummer and str(r.get("kommunenummer") or "") != str(kommunenummer):
+            continue
+        if fylke and str(r.get("fylke") or "") != str(fylke):
+            continue
         if omrade_prefiks and not str(r["omrade"]).startswith(omrade_prefiks):
             continue
 
         skala = prosjekt_skala(r["sakstype"])
-        naering = er_naeringsvennlig(r["sakstype"], skala)
+        # ETT autoritativt tilgjengelighetssignal: hvem som faktisk står som søker.
+        # Prosjektstørrelse (skala) påvirker KUN mulighetsscoren, aldri ledig/tatt.
+        proff = r.get("profesjonell_soker") is True
         mulighet = mulighetsscore(r["score"], skala, r["dager_siden"])
         if mulighet < min_mulighet:
             continue
@@ -85,11 +97,11 @@ def bygg_radar(fag: list[str] = None, omrade_prefiks: str = "",
             **r,
             "skala": skala,
             "skala_etikett": _SKALA_ETIKETT[skala],
-            "naeringsvennlig": naering,
+            "naeringsvennlig": proff,   # "kontaktbart foretak" == proff søker (samme signal)
             "mulighet": mulighet,
             "arbeid": arbeidssammendrag(r["sakstype"]),  # {overskrift, oppgaver[], fag[]}
-            "tilgjengelighet": tilgjengelighet(r["sakstype"], naering, r.get("profesjonell_soker")),
-            "tips": handling_tips(r["omrade"], skala, naering),
+            "tilgjengelighet": tilgjengelighet(r["sakstype"], r.get("profesjonell_soker")),
+            "tips": handling_tips(r["omrade"], proff),
         })
 
     rader.sort(key=lambda x: x["mulighet"], reverse=True)

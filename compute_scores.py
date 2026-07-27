@@ -243,11 +243,16 @@ def compute_scores(saker: pd.DataFrame, bedrifter: pd.DataFrame) -> pd.DataFrame
         antall_bransjer = len(nace_sett)
         b_score = bransjescore(antall_bransjer)
         f_score = ferskhetscore(sak.get("saksdato"), referansedato)
+        sak_kommune = str(sak.get("kommunenummer"))
 
         for nace in nace_sett:
             kandidater = bedrifter_per_nace.get(nace)
             if kandidater is None:
                 continue
+            # KRITISK (flerkommune): en sak skal KUN matches mot bedrifter i
+            # SAMME kommune. Uten dette ville f.eks. Bergen-saker matchet andre
+            # kommuners bedrifter og gitt en eksplosjon i (irrelevante) rader.
+            kandidater = kandidater[kandidater["kommunenummer"].astype(str) == sak_kommune]
             for _, bedrift in kandidater.iterrows():
                 g_score = geografiscore(
                     sak.get("postnummer"), bedrift.get("postnummer"),
