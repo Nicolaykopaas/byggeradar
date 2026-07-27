@@ -13,6 +13,7 @@ data/pipeline_status.json
 !data/.gitkeep
 .env
 landing/index.html
+feed/index.html
 .claude/
 *.log
 logs/
