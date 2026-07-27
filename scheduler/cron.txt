@@ -1,0 +1,9 @@
+# Linux/macOS-alternativ til Windows-oppgaven (register_task.ps1).
+# Legg til med:  crontab -e   og lim inn linjen under (juster sti og python).
+#
+# Kjører daglig kl. 07:15: pipeline + selvtest. Logg havner i logs/cron.log.
+
+15 7 * * * cd /sti/til/Tillatelse-Handverker && .venv/bin/python run_pipeline.py >> logs/cron.log 2>&1 && .venv/bin/python selftest.py >> logs/cron.log 2>&1
+
+# Ukentlig helsesjekk, mandager kl. 08:00:
+0 8 * * 1 cd /sti/til/Tillatelse-Handverker && .venv/bin/python helsesjekk.py >> logs/helsesjekk.log 2>&1

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="nb">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Byggesaksradar – nye byggejobber rett i innboksen</title>
+  <style>
+    :root { --bla:#1d4ed8; --morkbla:#1e293b; --gra:#64748b; --lys:#f8fafc; --kant:#e2e8f0; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+           color:var(--morkbla); line-height:1.6; background:#fff; }
+    .wrap { max-width:760px; margin:0 auto; padding:0 20px; }
+    header { background:linear-gradient(135deg,#1d4ed8,#1e3a8a); color:#fff; padding:64px 0 56px; text-align:center; }
+    header h1 { font-size:2.2rem; margin-bottom:12px; }
+    header p { font-size:1.15rem; opacity:.92; max-width:560px; margin:0 auto; }
+    section { padding:48px 0; border-bottom:1px solid var(--kant); }
+    h2 { font-size:1.4rem; margin-bottom:18px; }
+    .lead-kort { background:var(--lys); border:1px solid var(--kant); border-radius:12px;
+                 padding:22px 24px; margin-top:8px; }
+    .lead-kort .type { font-weight:600; font-size:1.1rem; }
+    .lead-kort .meta { color:var(--gra); font-size:.95rem; margin-top:4px; }
+    .badge { display:inline-block; background:#dbeafe; color:var(--bla); font-weight:600;
+             border-radius:999px; padding:3px 12px; font-size:.85rem; margin-top:12px; }
+    ul.punkter { list-style:none; margin-top:8px; }
+    ul.punkter li { padding:8px 0 8px 30px; position:relative; }
+    ul.punkter li::before { content:"✓"; position:absolute; left:0; color:var(--bla); font-weight:700; }
+    .pris { text-align:center; }
+    .pris .tall { font-size:3rem; font-weight:700; color:var(--bla); }
+    .pris .enhet { color:var(--gra); font-size:1.05rem; }
+    .knapp { display:inline-block; background:var(--bla); color:#fff; text-decoration:none;
+             font-weight:600; font-size:1.1rem; padding:15px 40px; border-radius:10px; margin-top:20px;
+             transition:background .15s; }
+    .knapp:hover { background:#1e40af; }
+    .liten { color:var(--gra); font-size:.9rem; margin-top:14px; }
+    footer { text-align:center; color:var(--gra); font-size:.85rem; padding:32px 0; }
+    @media (prefers-color-scheme: dark) {
+      body { background:#0f172a; color:#e2e8f0; }
+      .lead-kort { background:#1e293b; border-color:#334155; }
+      section { border-color:#334155; }
+      .badge { background:#1e3a8a; color:#bfdbfe; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <h1>Nye byggejobber før konkurrentene</h1>
+      <p>Byggesaksradar varsler deg ukentlig om nye byggesaker i ditt område og din bransje –
+         hentet direkte fra kommunens saksinnsyn.</p>
+    </div>
+  </header>
+
+  <section>
+    <div class="wrap">
+      <h2>Slik ser et lead ut</h2>
+      <div class="lead-kort">
+        <div class="type">{{EKSEMPEL_SAKSTYPE}}</div>
+        <div class="meta">Område: {{EKSEMPEL_OMRADE}} · Relevant for: {{EKSEMPEL_BRANSJE}}</div>
+        <span class="badge">Matchscore {{EKSEMPEL_SCORE}}/100</span>
+      </div>
+      <p class="liten">Ekte eksempel fra pilotområdet, anonymisert. Vi deler aldri navn eller
+         eksakt privatadresse – kun sakstype, område og bransje.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Hva du får</h2>
+      <ul class="punkter">
+        <li>Ukentlig e-post med ferske byggesaker i din kommune og bransje</li>
+        <li>Rangert etter hvor godt de passer bedriften din</li>
+        <li>Direkte lenke til saken hos kommunen</li>
+        <li>Ingen binding – si opp når som helst</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="pris">
+    <div class="wrap">
+      <h2>Pris</h2>
+      <div><span class="tall">{{PRIS}} kr</span> <span class="enhet">/ måned</span></div>
+      <a class="knapp" href="{{BETALINGSLENKE}}">Start abonnement</a>
+      <p class="liten">Sikker betaling via Stripe. Du får første ukesvarsel rett etter påmelding.</p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">Byggesaksradar · Data fra kommunale saksinnsyn og Brreg · {{GENERERT}}</div>
+  </footer>
+</body>
+</html>

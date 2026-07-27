@@ -4,6 +4,13 @@ __pycache__/
 venv/
 data/*.csv
 data/email_drafts/
+data/utboks/
+data/sendt/
+data/stripe_link.txt
+data/pipeline_status.json
 !data/.gitkeep
+.env
+landing/index.html
 .claude/
 *.log
+logs/
