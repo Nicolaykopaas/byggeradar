@@ -8,6 +8,7 @@ prosjekt (ingen falsk betalingsmur foran offentlig info).
 """
 import streamlit as st
 
+import kunder
 from feed import bygg_feed_rader, ferskhet_etikett
 from radar import bygg_radar, ukesammendrag
 
@@ -47,6 +48,24 @@ k[0].metric("Aktuelle prosjekter", s["totalt"])
 k[1].metric("Trolig ledige", s["trolig_ledige"])
 k[2].metric("Nye siste 7 dager", s["ferske_7d"])
 k[3].metric("Store prosjekter", s["store"])
+
+# --- Fangst-trakt: la interesserte melde seg på ukentlig varsel ---
+with st.expander("📬 Få ukentlig varsel på e-post – gratis å komme i gang"):
+    with st.form("varsle_meg"):
+        e = st.text_input("Din e-post (helst firmapost@…)")
+        c1, c2 = st.columns(2)
+        valgt_fag = c1.multiselect("Fag du vil ha varsel om", alle_fag, default=fag)
+        valgt_postnr = c2.text_input("Postnr-område (valgfritt, f.eks. 52)", value=prefiks)
+        sendt = st.form_submit_button("Meld meg på")
+    if sendt:
+        if not e or "@" not in e:
+            st.error("Skriv inn en gyldig e-postadresse.")
+        else:
+            kunder.legg_til_kunde(
+                epost=e.strip(), kommunenummer="4601",
+                postnummer_prefiks=valgt_postnr.strip(),
+                bransjer=";".join(valgt_fag), min_score=40, aktiv="interessent")
+            st.success("Takk! Du er registrert som interessent. Vi tar kontakt før første utsending.")
 st.divider()
 
 if not rader:

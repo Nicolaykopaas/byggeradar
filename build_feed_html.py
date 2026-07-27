@@ -13,7 +13,7 @@ import os
 import webbrowser
 from datetime import date
 
-from config import BASE_DIR
+from config import BASE_DIR, env
 from feed import ferskhet_etikett
 from radar import bygg_radar, ukesammendrag
 
@@ -45,6 +45,7 @@ def bygg() -> str:
 
     fag = sorted({b for r in rader for b in r["bransjer"]})
     postnr = sorted({r["omrade"] for r in rader})
+    kontakt = env("KONTAKT_EPOST") or env("VARSEL_TIL") or env("SMTP_FRA") or "din-epost@eksempel.no"
 
     doc = f"""<!doctype html>
 <html lang="nb"><head><meta charset="utf-8"/>
@@ -90,6 +91,10 @@ def bygg() -> str:
   .tilg-tidlig {{ background:#fef9c3; color:#713f12; }}
   .tilg-tatt {{ background:#fee2e2; color:#7f1d1d; }}
   .tips {{ font-size:.86rem; color:#475569; background:#f8fafc; border-left:3px solid var(--bla); border-radius:0 6px 6px 0; padding:8px 10px; }}
+  .cta {{ background:#0f172a; color:#fff; border-radius:14px; padding:26px; margin:12px 0 40px; text-align:center; }}
+  .cta h2 {{ font-size:1.3rem; }} .cta p {{ opacity:.85; margin:8px 0 16px; }}
+  .knapp {{ display:inline-block; background:var(--bla); color:#fff; text-decoration:none; font-weight:600; padding:12px 28px; border-radius:9px; }}
+  .knapp:hover {{ background:#1e40af; }}
   .tom {{ padding:48px 20px; text-align:center; color:var(--grå); }}
   footer {{ color:var(--grå); font-size:.82rem; padding:24px 20px 40px; text-align:center; }}
   @media (prefers-color-scheme:dark) {{
@@ -127,11 +132,18 @@ def bygg() -> str:
        ferdige, og merker resten «uavklart – sjekk saken». Vi lover aldri at en jobb er ledig.</div>
     <div class="grid" id="grid"></div>
     <div class="tom" id="tom" style="display:none"></div>
+
+    <div class="cta">
+      <h2>Vil du ha disse rett i innboksen hver mandag?</h2>
+      <p>Gratis å komme i gang. Velg faget ditt over, så tar vi det med i påmeldingen.</p>
+      <a id="paameld" class="knapp" href="mailto:{kontakt}?subject=Byggeradar%20varsel">Meld meg på varsel</a>
+    </div>
   </main>
   <footer>Byggeradar · data fra Bergen kommunes saksinnsyn + Brreg · generert {date.today().isoformat()} · ingen personopplysninger</footer>
 
 <script>
 const DATA = {_json_for_html(data)};
+const KONTAKT = {_json_for_html(kontakt)};
 const esc = s => String(s).replace(/[&<>"]/g, c => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}}[c]));
 const $ = id => document.getElementById(id);
 
@@ -181,6 +193,14 @@ function tegn() {{
       (omrade ? ` i postnr <b>${{esc(omrade)}}</b>` : "") +
       " akkurat nå.<br>Prøv et større område, eller kom tilbake i morgen – lista oppdateres daglig.";
   }} else {{ tom.style.display = "none"; }}
+
+  // Prefyll påmeldings-mailen med valgt fag/område
+  const fagTekst = fag || "alle fag";
+  const omr = omrade ? (" i postnr " + omrade) : " i Bergen";
+  const emne = encodeURIComponent("Byggeradar varsel: " + fagTekst);
+  const body = encodeURIComponent("Hei! Jeg vil ha ukentlig varsel om nye byggesaker for "
+    + fagTekst + omr + ".\\n\\nBedrift/navn:\\nTelefon:");
+  $("paameld").href = `mailto:${{KONTAKT}}?subject=${{emne}}&body=${{body}}`;
 }}
 ["fag","omrade","kunStore","kunLedig","skjulTatt"].forEach(id => $(id).addEventListener("input", tegn));
 tegn();
