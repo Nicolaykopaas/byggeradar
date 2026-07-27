@@ -88,7 +88,7 @@ def bygg_radar(fag: list[str] = None, omrade_prefiks: str = "",
             "naeringsvennlig": naering,
             "mulighet": mulighet,
             "arbeid": arbeidssammendrag(r["sakstype"]),  # {overskrift, oppgaver[], fag[]}
-            "tilgjengelighet": tilgjengelighet(r["sakstype"], naering),  # {niva, etikett, forklaring}
+            "tilgjengelighet": tilgjengelighet(r["sakstype"], naering, r.get("profesjonell_soker")),
             "tips": handling_tips(r["omrade"], skala, naering),
         })
 
@@ -104,5 +104,6 @@ def ukesammendrag(rader: list[dict]) -> dict:
         "ferske_7d": len(ferske),
         "store": sum(1 for r in rader if r["skala"] == "stor"),
         "naeringsvennlige": sum(1 for r in rader if r["naeringsvennlig"]),
+        "trolig_ledige": sum(1 for r in rader if r.get("profesjonell_soker") is False),
         "topp": rader[:3],
     }

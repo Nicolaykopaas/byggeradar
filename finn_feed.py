@@ -30,6 +30,7 @@ with st.sidebar:
     min_mulighet = st.slider("Minimum mulighet", 0, 100, 40)
     maks_dager = st.slider("Maks alder (dager)", 1, 60, 30)
     skjul_tatt = st.checkbox("Skjul tidlige/trolig tatte", value=True)
+    kun_ledig = st.checkbox("Kun trolig ledige (privat søker)", value=False)
     st.caption("«Mulighet» = ferskt + stort + treffer ditt fag.")
 
 prefiks = "" if omrade == "Hele Bergen" else omrade
@@ -37,13 +38,15 @@ rader = bygg_radar(fag=fag or None, omrade_prefiks=prefiks,
                    min_mulighet=min_mulighet, maks_dager=maks_dager)
 if skjul_tatt:
     rader = [r for r in rader if r["tilgjengelighet"]["niva"] == "uavklart"]
+if kun_ledig:
+    rader = [r for r in rader if r.get("profesjonell_soker") is False]
 s = ukesammendrag(rader)
 
 k = st.columns(4)
 k[0].metric("Aktuelle prosjekter", s["totalt"])
-k[1].metric("Nye siste 7 dager", s["ferske_7d"])
-k[2].metric("Store prosjekter", s["store"])
-k[3].metric("Kontaktbart foretak", s["naeringsvennlige"])
+k[1].metric("Trolig ledige", s["trolig_ledige"])
+k[2].metric("Nye siste 7 dager", s["ferske_7d"])
+k[3].metric("Store prosjekter", s["store"])
 st.divider()
 
 if not rader:

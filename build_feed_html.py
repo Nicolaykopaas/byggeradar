@@ -39,6 +39,7 @@ def bygg() -> str:
         "tilg_niva": r["tilgjengelighet"]["niva"],
         "tilg_etikett": r["tilgjengelighet"]["etikett"],
         "tilg_forklaring": r["tilgjengelighet"]["forklaring"],
+        "trolig_ledig": r.get("profesjonell_soker") is False,
         "tips": r["tips"],
     } for r in rader]
 
@@ -78,7 +79,8 @@ def bygg() -> str:
   .meta {{ font-size:.9rem; color:#334155; }}
   .tags {{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }}
   .tag {{ font-size:.74rem; font-weight:600; color:#fff; background:#475569; border-radius:999px; padding:2px 9px; }}
-  .naering {{ font-size:.74rem; font-weight:600; color:#166534; background:#dcfce7; border-radius:999px; padding:2px 9px; }}
+  .naering {{ font-size:.74rem; font-weight:600; color:#475569; background:#e2e8f0; border-radius:999px; padding:2px 9px; }}
+  .ledig {{ font-size:.74rem; font-weight:700; color:#166534; background:#dcfce7; border-radius:999px; padding:2px 9px; }}
   .arbeid {{ font-size:.85rem; }}
   .arbeid-t {{ color:#334155; margin-bottom:4px; }}
   .arbeid ul {{ margin:0; padding-left:18px; color:var(--grå); columns:2; column-gap:16px; }}
@@ -112,8 +114,8 @@ def bygg() -> str:
       <select id="fag"><option value="">Alle fag</option>{"".join(f'<option>{f}</option>' for f in fag)}</select></div>
     <div class="felt"><label for="omrade">Område (postnr)</label>
       <select id="omrade"><option value="">Hele Bergen</option>{"".join(f'<option>{p}</option>' for p in postnr)}</select></div>
+    <label class="sjekk"><input type="checkbox" id="kunLedig"/> Kun trolig ledige (privat søker)</label>
     <label class="sjekk"><input type="checkbox" id="kunStore"/> Kun store prosjekter</label>
-    <label class="sjekk"><input type="checkbox" id="kunNaering"/> Kun kontaktbart foretak</label>
     <label class="sjekk"><input type="checkbox" id="skjulTatt" checked/> Skjul tidlige/trolig tatte</label>
     <span class="teller" id="teller"></span>
   </div></div></div>
@@ -135,7 +137,9 @@ const $ = id => document.getElementById(id);
 
 function kort(r) {{
   const tags = r.bransjer.slice(0,4).map(b => `<span class="tag">${{esc(b)}}</span>`).join(" ");
-  const naering = r.naering ? `<span class="naering">✓ Kontaktbart foretak</span>` : "";
+  const naering = r.trolig_ledig
+    ? `<span class="ledig">👤 Trolig ledig – privat søker</span>`
+    : (r.naering ? `<span class="naering">🏢 Proff søker inne</span>` : "");
   const status = r.status ? ` · ${{esc(r.status)}}` : "";
   const oppgaver = (r.oppgaver && r.oppgaver.length)
     ? `<div class="arbeid"><div class="arbeid-t">🛠️ Arbeid som inngår: <b>${{esc(r.arbeid)}}</b></div>
@@ -160,13 +164,13 @@ function kort(r) {{
 
 function tegn() {{
   const fag = $("fag").value, omrade = $("omrade").value;
-  const kunStore = $("kunStore").checked, kunNaering = $("kunNaering").checked;
+  const kunStore = $("kunStore").checked, kunLedig = $("kunLedig").checked;
   const skjulTatt = $("skjulTatt").checked;
   const treff = DATA.filter(r =>
     (!fag || r.bransjer.includes(fag)) &&
     (!omrade || r.omrade === omrade) &&
     (!kunStore || r.skala === "stor") &&
-    (!kunNaering || r.naering) &&
+    (!kunLedig || r.trolig_ledig) &&
     (!skjulTatt || r.tilg_niva === "uavklart"));
   $("grid").innerHTML = treff.map(kort).join("");
   $("teller").textContent = treff.length + (treff.length === 1 ? " treff" : " treff");
@@ -178,7 +182,7 @@ function tegn() {{
       " akkurat nå.<br>Prøv et større område, eller kom tilbake i morgen – lista oppdateres daglig.";
   }} else {{ tom.style.display = "none"; }}
 }}
-["fag","omrade","kunStore","kunNaering","skjulTatt"].forEach(id => $(id).addEventListener("input", tegn));
+["fag","omrade","kunStore","kunLedig","skjulTatt"].forEach(id => $(id).addEventListener("input", tegn));
 tegn();
 </script>
 </body></html>"""

@@ -42,6 +42,15 @@ def bygg_feed_rader(maks: int = 200) -> list[dict]:
     )
     df = saker.merge(agg, on="sak_id", how="inner")  # kun saker som faktisk matcher noe
 
+    def _som_bool(v):
+        """CSV-runde kan gi bool, np.bool eller "True"/"False"-tekst. None hvis mangler."""
+        if v is None or (isinstance(v, float) and pd.isna(v)):
+            return None
+        if isinstance(v, str):
+            return v.strip().lower() in ("true", "1", "ja")
+        return bool(v)
+
+    har_ps = "profesjonell_soker" in df.columns
     rader = []
     for _, r in df.iterrows():
         postnr = r.get("postnummer")
@@ -55,6 +64,7 @@ def bygg_feed_rader(maks: int = 200) -> list[dict]:
             "score": int(round(float(r.get("score", 0)))),
             "saksdato": r.get("saksdato"),
             "status": r.get("status") if "status" in df.columns and isinstance(r.get("status"), str) else "",
+            "profesjonell_soker": _som_bool(r.get("profesjonell_soker")) if har_ps else None,
             "dager_siden": _dager_siden(r.get("saksdato")),
             # --- Låste felt (vises aldri i offentlig HTML) ---
             "_full_adresse": r.get("adresse"),

@@ -8,10 +8,12 @@ Trondheim (trondheim.innsynsportal.no) og Oslo PBE
 (innsyn.pbe.oslo.kommune.no) er UTELUKKET - begge har robots.txt
 "Disallow: /" og skal ikke skrapes.
 
-VIKTIG: API-responsen inneholder "tiltakshaver" (navnet på privatpersonen
-som søker). Dette er en personopplysning og skal ALDRI lagres eller
-videreformidles - kun bedriftsdata fra Brreg skal brukes i matching og
-utsending. Feltet leses aldri ut i denne filen.
+VIKTIG (personvern): "tiltakshaver" (navnet på privatpersonen som søker) er en
+personopplysning og leses ALDRI ut / lagres aldri. Feltet "soker" (ansvarlig
+søker) leses KUN for å utlede én boolean - `profesjonell_soker` (ser søkeren ut
+som et foretak, ja/nei) - som brukes til å anslå om jobben trolig alt er tildelt.
+Selve navnet lagres aldri; kun ja/nei-flagget havner i saker.csv. Dette er avklart
+og ønsket (jf. brukerbeslutning), og holder oss innenfor personvernregelen.
 
 Output: data/saker.csv
 """
@@ -61,6 +63,24 @@ def _hent_gateadresse(adresse_liste) -> str | None:
     return adresse_liste[0].split(",")[0].strip()
 
 
+# Foretaks-kjennetegn: selskapsformer (hele ord) + typiske bransjeord i firmanavn.
+_FORETAK = re.compile(
+    r"\b(AS|ASA|ANS|DA|BA|SA|NUF|KS|ENK)\b|BYGG|ENTREPREN|EIENDOM|PROSJEKT|"
+    r"UTVIKLING|HOLDING|GRUPPEN|INVEST|ANLEGG|MASKIN|ARKITEKT|BOLIG|TOMTE", re.I)
+
+
+def _er_profesjonell_soker(soker) -> bool:
+    """Leser KUN for å utlede ja/nei - navnet lagres aldri (se personvern-notat øverst).
+
+    True hvis ansvarlig søker ser ut som et foretak (AS o.l.), False hvis det ser ut
+    som en privatperson eller mangler. Brukes til å anslå «ledig vs tatt».
+    """
+    if not soker:
+        return False
+    tekst = " ".join(soker) if isinstance(soker, list) else str(soker)
+    return bool(_FORETAK.search(tekst))
+
+
 def fetch_saker(rows: int = 100, sleep_s: float = 0.3) -> pd.DataFrame:
     """Hent de `rows` sist innkomne byggesakene fra Bergen, nyest først."""
     params = {
@@ -98,6 +118,8 @@ def fetch_saker(rows: int = 100, sleep_s: float = 0.3) -> pd.DataFrame:
             "saksdato": saksdato,
             "sakstype": sak.get("tittel"),
             "status": sak.get("status"),  # f.eks. "Under behandling" / "Avsluttet"
+            # KUN boolean - navnet på søker lagres aldri (personvern, se toppen):
+            "profesjonell_soker": _er_profesjonell_soker(sak.get("soker")),
             "kilde_url": BERGEN_SAK_URL_MAL.format(saksnr=saksnr) if saksnr else None,
         })
 

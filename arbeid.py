@@ -98,8 +98,14 @@ _TIDLIG = re.compile(
     r"rammesøknad|rammetillatelse", re.I)
 
 
-def tilgjengelighet(sakstype: str, naeringsvennlig: bool = False) -> dict:
-    """Ærlig signal om jobben er ledig. niva ∈ {tatt, tidlig, uavklart}."""
+def tilgjengelighet(sakstype: str, naeringsvennlig: bool = False,
+                    profesjonell_soker=None) -> dict:
+    """Ærlig signal om jobben er ledig. niva ∈ {tatt, tidlig, uavklart}.
+
+    profesjonell_soker: True = ansvarlig søker er et foretak (proff alt inne →
+    hovedjobb trolig tatt), False = privat søker (ingen proff registrert →
+    størst sjanse for at de vil hyre hjelp), None = ukjent.
+    """
     t = sakstype or ""
     if _TATT.search(t):
         return {"niva": "tatt", "etikett": "Trolig allerede i gang",
@@ -107,10 +113,18 @@ def tilgjengelighet(sakstype: str, naeringsvennlig: bool = False) -> dict:
     if _TIDLIG.search(t):
         return {"niva": "tidlig", "etikett": "Svært tidlig",
                 "forklaring": "Ingenting er avgjort ennå – ingen konkret jobb å ta på dette stadiet."}
-    if naeringsvennlig:
-        return {"niva": "uavklart", "etikett": "Hovedjobb trolig tildelt – sub/leverandør mulig",
-                "forklaring": "Større prosjekt har som regel en ansvarlig entreprenør. Realistisk "
-                              "vei inn: tilby deg som underentreprenør/leverandør til foretaket."}
+
+    # Proff søker (eller stort prosjekt) → hovedjobb trolig tatt, men sub/leverandør mulig
+    if profesjonell_soker or naeringsvennlig:
+        return {"niva": "uavklart", "etikett": "Proff søker inne – hovedjobb trolig tatt",
+                "forklaring": "Ansvarlig søker er et foretak, så en entreprenør er som regel alt "
+                              "inne. Realistisk vei inn: tilby deg som underentreprenør/leverandør."}
+    # Privat søker → ingen proff registrert ennå = størst sjanse for at de vil ha håndverker
+    if profesjonell_soker is False:
+        return {"niva": "uavklart", "etikett": "Privat søker – kan trenge håndverker",
+                "forklaring": "Ingen profesjonell søker registrert – størst sjanse for at "
+                              "tiltakshaver faktisk vil hyre inn. Vær synlig lokalt (§15 hindrer "
+                              "kald e-post til privatpersoner)."}
     return {"niva": "uavklart", "etikett": "Uavklart – må sjekkes",
             "forklaring": "Offentlig data kan ikke bekrefte om jobben er ledig. Åpne saken hos "
                           "kommunen for å se om ansvarlig utførende alt er på plass."}
