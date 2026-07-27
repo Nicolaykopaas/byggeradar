@@ -17,6 +17,8 @@ Spin-off av anbudsradar-konseptet — samme mønster: gratis smakebit-lead på e
 - `stripe_setup.py` — lager Stripe Payment Link (99 kr/mnd) via `requests`. `build_landing.py` + `landing/` — statisk landingsside.
 - `generate_email_drafts.py --utboks` — skreddersydde salgs-e-poster til `data/utboks/`, kun upersonlige adresser (§15). `approve_and_send.py` — godkjenn+send via SMTP.
 - `helsesjekk.py` — ukentlig: tester skraperne, teller leads/kunder, rapporterer. `config.py`/`logg.py`/`leads.py` — felles hjelpere.
+- `kunder.py` + `sett_kunde.py` — kunderegister (`data/kunder.csv`, valgfri Stripe-sync). `send_kunde_leads.py` — ukentlig levering av leads til betalende kunder (område/fag/score-filtrert, dedupe via `data/kunde_sendt.csv`). Schedulert mandag 08:30.
+- Matching: `compute_scores.py` mapper sakstype→NACE (fler-bransje), score vekter bransje-spesifisitet/geografi/ferskhet/størrelse. `byggesak_fetch.py`/`brreg_fetch.py` har retry m/backoff. Kun ekte `BYGG-`-saker beholdes. Tester i `tests/`.
 
 ## Regler
 - Alt skal være gratis å drifte. Ingen betalte API-er eller hosting

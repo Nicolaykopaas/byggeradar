@@ -10,9 +10,11 @@ import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 LOG_DIR = os.path.join(BASE_DIR, "logs")
-UTBOKS_DIR = os.path.join(DATA_DIR, "utboks")      # e-poster som venter på godkjenning
-SENDT_DIR = os.path.join(DATA_DIR, "sendt")        # arkiv over sendte e-poster
+UTBOKS_DIR = os.path.join(DATA_DIR, "utboks")      # salgs-e-poster som venter på godkjenning
+SENDT_DIR = os.path.join(DATA_DIR, "sendt")        # arkiv over sendte salgs-e-poster
 EMAIL_DRAFTS_DIR = os.path.join(DATA_DIR, "email_drafts")  # legacy: dashbord-utkast
+KUNDE_UTBOKS_DIR = os.path.join(DATA_DIR, "kunde_utboks")  # ukentlige leads til betalende kunder
+KUNDE_SENDT_DIR = os.path.join(DATA_DIR, "kunde_sendt")    # arkiv over leads sendt til kunder
 
 PATHS = {
     "saker": os.path.join(DATA_DIR, "saker.csv"),
@@ -20,6 +22,7 @@ PATHS = {
     "matches": os.path.join(DATA_DIR, "matches.csv"),
     "kontaktet": os.path.join(DATA_DIR, "kontaktet.csv"),
     "kunder": os.path.join(DATA_DIR, "kunder.csv"),
+    "kunde_sendt": os.path.join(DATA_DIR, "kunde_sendt.csv"),  # logg: hvilke leads hver kunde har fått
 }
 
 # --- Pilot-innstillinger ---------------------------------------------------

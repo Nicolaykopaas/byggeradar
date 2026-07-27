@@ -6,6 +6,8 @@ data/*.csv
 data/email_drafts/
 data/utboks/
 data/sendt/
+data/kunde_utboks/
+data/kunde_sendt/
 data/stripe_link.txt
 data/pipeline_status.json
 !data/.gitkeep

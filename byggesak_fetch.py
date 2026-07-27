@@ -26,6 +26,26 @@ BERGEN_KOMMUNENUMMER = "4601"
 BERGEN_API_URL = "https://www.bergen.kommune.no/innsynplanogbyggesak/api/saker"
 BERGEN_SAK_URL_MAL = "https://www.bergen.kommune.no/omkommunen/offentlig-innsyn/innsynplanogbyggesak/saksinnsyn/sak/{saksnr}"
 
+# Kommunens API timer av og til ut. Ett feilet kall skal ikke rive ned pipelinen.
+REQUEST_TIMEOUT = 30
+
+
+def _get_med_retry(url, params, timeout=REQUEST_TIMEOUT, forsok=3):
+    """requests.get med eksponentiell backoff (1s, 2s, 4s) ved nettverksfeil.
+
+    Prøver på nytt ved requests.exceptions.RequestException (timeout/connection).
+    Hever siste feil hvis alle forsøk feiler.
+    """
+    siste_feil = None
+    for n in range(forsok):
+        try:
+            return requests.get(url, params=params, timeout=timeout)
+        except requests.exceptions.RequestException as feil:
+            siste_feil = feil
+            if n < forsok - 1:
+                time.sleep(2 ** n)  # 1s, 2s, 4s, ...
+    raise siste_feil
+
 
 def _hent_postnummer(adresse_liste) -> str | None:
     """Adressefeltet fra API-et er på formen 'Gateveien 1, 5230 Paradis'."""
@@ -50,7 +70,7 @@ def fetch_saker(rows: int = 100, sleep_s: float = 0.3) -> pd.DataFrame:
         "orderBy": "saksdato",
         "asc": "false",
     }
-    resp = requests.get(BERGEN_API_URL, params=params, timeout=20)
+    resp = _get_med_retry(BERGEN_API_URL, params)
     resp.raise_for_status()
     time.sleep(sleep_s)
 
@@ -58,6 +78,11 @@ def fetch_saker(rows: int = 100, sleep_s: float = 0.3) -> pd.DataFrame:
     rader = []
     for sak in items:
         saksnr = sak.get("saksnr")
+        # Fritekstsøket "BYGG" drar også inn henvendelser (HENV-), klager (KLAGE-) og
+        # tilsyn (TILSYN-) fordi ordet "bygg" står i tittelen. Det er ikke reelle
+        # byggetillatelser og gir verdiløse leads - behold kun ekte byggesaker (BYGG-).
+        if not (saksnr and str(saksnr).startswith("BYGG-")):
+            continue
         saksdato_ms = sak.get("saksdato")
         saksdato = (
             datetime.fromtimestamp(saksdato_ms / 1000, tz=timezone.utc).date().isoformat()

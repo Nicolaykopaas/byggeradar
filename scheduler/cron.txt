@@ -7,3 +7,7 @@
 
 # Ukentlig helsesjekk, mandager kl. 08:00:
 0 8 * * 1 cd /sti/til/Tillatelse-Handverker && .venv/bin/python helsesjekk.py >> logs/helsesjekk.log 2>&1
+
+# Ukentlig levering av leads til betalende kunder, mandager kl. 08:30
+# (samtykket leveranse til abonnenter - kan sendes automatisk):
+30 8 * * 1 cd /sti/til/Tillatelse-Handverker && .venv/bin/python send_kunde_leads.py >> logs/kundelevering.log 2>&1

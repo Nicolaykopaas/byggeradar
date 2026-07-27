@@ -45,6 +45,16 @@ Register-ScheduledTask -TaskName "$OppgaveNavn-Helsesjekk" -Action $HelseHandlin
     -Settings $Innst -Description "Ukentlig helsesjekk for Byggesaksradar" -Force | Out-Null
 Write-Host "Registrerte oppgaven '$OppgaveNavn-Helsesjekk' - kjører mandager kl. 08:00."
 
+# Ukentlig levering av leads til betalende kunder (mandager kl. 08:30).
+# Samtykket leveranse til abonnenter - kan sendes automatisk.
+$LeverArg = "-NoProfile -ExecutionPolicy Bypass -Command " +
+    "`"Set-Location '$Rot'; if (Test-Path '$VenvPy') { & '$VenvPy' send_kunde_leads.py } else { python send_kunde_leads.py }`""
+$LeverHandling = New-ScheduledTaskAction -Execute "powershell.exe" -Argument $LeverArg -WorkingDirectory $Rot
+$LeverUtloser = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Monday -At "08:30"
+Register-ScheduledTask -TaskName "$OppgaveNavn-Kundelevering" -Action $LeverHandling -Trigger $LeverUtloser `
+    -Settings $Innst -Description "Ukentlig levering av leads til betalende kunder" -Force | Out-Null
+Write-Host "Registrerte oppgaven '$OppgaveNavn-Kundelevering' - kjører mandager kl. 08:30."
+
 Write-Host ""
 Write-Host "Test daglig-jobben nå med:  Start-ScheduledTask -TaskName '$OppgaveNavn'"
 Write-Host "Se status med:               Get-ScheduledTaskInfo -TaskName '$OppgaveNavn'"

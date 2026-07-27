@@ -89,8 +89,26 @@ python approve_and_send.py                 # 3. godkjenn og send (logger til kon
 - Ingen bedrift kontaktes to ganger (`data/kontaktet.csv`).
 - Sendte e-poster arkiveres i `data/sendt/`.
 
-Registrer nye betalende kunder i `data/kunder.csv` (kolonner: `epost,omrade,bransje,aktiv`),
-eller la helsesjekken lese antallet direkte fra Stripe hvis `STRIPE_SECRET_KEY` er satt.
+## Kunder og levering (produktet)
+
+En betalende kunde får ukens nye, relevante byggesaker levert på e-post. Administrer kunder:
+```bash
+python sett_kunde.py legg-til --epost post@firma.no --kommune 4601 --bransjer "Snekkerarbeid/tømrer" --minscore 55
+python sett_kunde.py liste
+python sett_kunde.py deaktiver --epost post@firma.no
+```
+`data/kunder.csv`-skjema: `epost, navn, kommunenummer, postnummer_prefiks, bransjer, min_score, aktiv, opprettet`.
+`bransjer` = semikolon-separert (tom = alle fag), `postnummer_prefiks` = f.eks. `52` (tom = hele kommunen —
+anbefalt, siden mange saker mangler postnummer). Har du `STRIPE_SECRET_KEY` satt, beriker helsesjekken
+kundetallet fra aktive Stripe-abonnement i tillegg.
+
+Levering (schedulerbar, kjører automatisk mandag 08:30, eller manuelt):
+```bash
+python send_kunde_leads.py --dry-run   # skriv e-postene til data/kunde_utboks/ (send ingenting)
+python send_kunde_leads.py             # send ukens leads, logg til data/kunde_sendt.csv
+```
+Ingen kunde får samme sak to ganger. Tomme uker hoppes over (ingen tom e-post). Dette er en samtykket
+leveranse til betalende abonnenter, så full adresse er med (i motsetning til de kalde salgs-e-postene).
 
 ## Dashbord
 ```bash

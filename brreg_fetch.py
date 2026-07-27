@@ -8,6 +8,27 @@ import pandas as pd
 
 BRREG_URL = "https://data.brreg.no/enhetsregisteret/api/enheter"
 
+# Brreg er av og til treg / timer ut på enkeltkall. En hel paginert henting tar
+# ~5 min, og ett feilet kall skal ikke rive ned hele den daglige pipelinen.
+REQUEST_TIMEOUT = 30
+
+
+def _get_med_retry(url, params, timeout=REQUEST_TIMEOUT, forsok=3):
+    """requests.get med eksponentiell backoff (1s, 2s, 4s) ved nettverksfeil.
+
+    Prøver på nytt ved requests.exceptions.RequestException (timeout/connection).
+    Hever siste feil hvis alle forsøk feiler.
+    """
+    siste_feil = None
+    for n in range(forsok):
+        try:
+            return requests.get(url, params=params, timeout=timeout)
+        except requests.exceptions.RequestException as feil:
+            siste_feil = feil
+            if n < forsok - 1:
+                time.sleep(2 ** n)  # 1s, 2s, 4s, ...
+    raise siste_feil
+
 # NACE-koder for håndverksfag som er aktuelle kjøpere av byggesaksleads
 HANDVERKER_NACE = {
     "43.210": "Elektroinstallasjon",
@@ -35,7 +56,7 @@ def fetch_bedrifter(kommunenummer: str, nace_koder: dict = None, sleep_s: float 
                 "size": 100,
                 "page": page,
             }
-            resp = requests.get(BRREG_URL, params=params, timeout=20)
+            resp = _get_med_retry(BRREG_URL, params)
             resp.raise_for_status()
             data = resp.json()
             enheter = data.get("_embedded", {}).get("enheter", [])

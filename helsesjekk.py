@@ -66,28 +66,11 @@ def nye_leads_7d() -> int:
 
 
 def aktive_kunder() -> tuple[int, str]:
-    """Antall betalende kunder. Prøver Stripe-API, faller tilbake til kunder.csv."""
-    nokkel = env("STRIPE_SECRET_KEY")
-    if nokkel:
-        try:
-            resp = requests.get(
-                "https://api.stripe.com/v1/subscriptions",
-                auth=(nokkel, ""), params={"status": "active", "limit": 100}, timeout=30)
-            resp.raise_for_status()
-            antall = len(resp.json().get("data", []))
-            return antall, "Stripe"
-        except Exception as exc:  # noqa: BLE001
-            log.warning("Klarte ikke hente kunder fra Stripe: %s", exc)
-    # Fallback: lokal fil
-    if os.path.exists(PATHS["kunder"]):
-        try:
-            kunder = pd.read_csv(PATHS["kunder"])
-            if "aktiv" in kunder.columns:
-                kunder = kunder[kunder["aktiv"].astype(str).str.lower().isin(["ja", "true", "1"])]
-            return len(kunder), "kunder.csv"
-        except Exception:  # noqa: BLE001
-            pass
-    return 0, "ingen kilde"
+    """Antall betalende kunder. Delegerer til kunder-modulen (Stripe + kunder.csv)."""
+    import kunder
+    df = kunder.aktive_kunder()
+    kilde = "Stripe/kunder.csv" if env("STRIPE_SECRET_KEY") else "kunder.csv"
+    return len(df), kilde
 
 
 def utestaende_utboks() -> int:
