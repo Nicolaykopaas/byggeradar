@@ -54,6 +54,7 @@ def bygg_feed_rader(maks: int = 200) -> list[dict]:
             "bransjer": r.get("bransjer") or [],
             "score": int(round(float(r.get("score", 0)))),
             "saksdato": r.get("saksdato"),
+            "status": r.get("status") if "status" in df.columns and isinstance(r.get("status"), str) else "",
             "dager_siden": _dager_siden(r.get("saksdato")),
             # --- Låste felt (vises aldri i offentlig HTML) ---
             "_full_adresse": r.get("adresse"),

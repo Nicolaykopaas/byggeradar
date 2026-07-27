@@ -97,6 +97,7 @@ def fetch_saker(rows: int = 100, sleep_s: float = 0.3) -> pd.DataFrame:
             "adresse": _hent_gateadresse(adresse_liste),
             "saksdato": saksdato,
             "sakstype": sak.get("tittel"),
+            "status": sak.get("status"),  # f.eks. "Under behandling" / "Avsluttet"
             "kilde_url": BERGEN_SAK_URL_MAL.format(saksnr=saksnr) if saksnr else None,
         })
 

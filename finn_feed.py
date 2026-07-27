@@ -1,58 +1,64 @@
-"""Interaktiv "Finn-feed"-prototype i Streamlit.
+"""Byggeradar - interaktiv «Din radar» i Streamlit.
 
 Kjør:  streamlit run finn_feed.py
 
-Viser nye byggetillatelser som annonser, anonymisert til postnummer, med filtre på
-fag/postnr/score. "Lås opp" er en prototype-CTA (ingen betaling). Formål: teste
-verdiopplevelsen før vi bygger ekte betaling.
+Kuraterer nye byggesaker ned til de som er verdt tiden din, filtrert på ditt fag
+og område. Postnr-anonymisert, ingen personopplysninger. Ærlig handlingstips per
+prosjekt (ingen falsk betalingsmur foran offentlig info).
 """
-import pandas as pd
 import streamlit as st
 
 from feed import bygg_feed_rader, ferskhet_etikett
+from radar import bygg_radar, ukesammendrag
 
-st.set_page_config(page_title="Byggeradar – prototype", layout="wide")
+st.set_page_config(page_title="Byggeradar", layout="wide")
 st.title("Byggeradar")
-st.caption("Nye byggetillatelser i Bergen – anonymisert til postnummer. Prototype: «Lås opp» er kun en demo.")
+st.caption("Vi leser hver nye byggesak i Bergen så du slipper. Her er de som er verdt tiden din.")
 
-rader = bygg_feed_rader()
-if not rader:
+_alle = bygg_feed_rader()
+if not _alle:
     st.warning("Ingen data. Kjør `python run_pipeline.py` først.")
     st.stop()
 
-# --- Filtre ---
-alle_bransjer = sorted({b for r in rader for b in r["bransjer"]})
-alle_postnr = sorted({r["omrade"] for r in rader})
+alle_fag = sorted({b for r in _alle for b in r["bransjer"]})
+alle_postnr = sorted({r["omrade"] for r in _alle})
+
 with st.sidebar:
-    st.header("Filtre")
-    valgt_fag = st.multiselect("Fag", alle_bransjer)
-    valgt_postnr = st.multiselect("Postnummer", alle_postnr)
-    min_score = st.slider("Minimum matchscore", 0, 100, 40)
+    st.header("Din radar")
+    fag = st.multiselect("Ditt fag", alle_fag)
+    omrade = st.selectbox("Område (postnr)", ["Hele Bergen"] + alle_postnr)
+    min_mulighet = st.slider("Minimum mulighet", 0, 100, 40)
     maks_dager = st.slider("Maks alder (dager)", 1, 60, 30)
+    st.caption("«Mulighet» = ferskt + stort + treffer ditt fag.")
 
-def _passer(r):
-    if valgt_fag and not (set(valgt_fag) & set(r["bransjer"])):
-        return False
-    if valgt_postnr and r["omrade"] not in valgt_postnr:
-        return False
-    if r["score"] < min_score:
-        return False
-    if r["dager_siden"] is not None and r["dager_siden"] > maks_dager:
-        return False
-    return True
+prefiks = "" if omrade == "Hele Bergen" else omrade
+rader = bygg_radar(fag=fag or None, omrade_prefiks=prefiks,
+                   min_mulighet=min_mulighet, maks_dager=maks_dager)
+s = ukesammendrag(rader)
 
-vist = [r for r in rader if _passer(r)]
-st.subheader(f"{len(vist)} ferske saker")
+k = st.columns(4)
+k[0].metric("Aktuelle prosjekter", s["totalt"])
+k[1].metric("Nye siste 7 dager", s["ferske_7d"])
+k[2].metric("Store prosjekter", s["store"])
+k[3].metric("Kontaktbart foretak", s["naeringsvennlige"])
+st.divider()
 
-# --- Kort i rutenett ---
-kolonner = st.columns(3)
-for i, r in enumerate(vist):
-    with kolonner[i % 3].container(border=True):
-        topp = f"**{r['score']}** · {ferskhet_etikett(r['dager_siden'])}"
-        st.markdown(topp)
+if not rader:
+    st.info("Ingen prosjekter med gjeldende filter. Prøv å senke «minimum mulighet» eller utvide området.")
+    st.stop()
+
+SKALA_EMOJI = {"stor": "🟢", "middels": "🔵", "liten": "⚪"}
+kol = st.columns(3)
+for i, r in enumerate(rader):
+    with kol[i % 3].container(border=True):
+        st.markdown(f"**{r['mulighet']}** · {SKALA_EMOJI[r['skala']]} {r['skala_etikett']} · {ferskhet_etikett(r['dager_siden'])}")
         st.markdown(f"#### {r['sakstype']}")
-        st.markdown(f"🔒 Område: **{r['omrade']}** · eksakt adresse skjult")
+        linje = f"📍 Postnr **{r['omrade']}**"
+        if r.get("status"):
+            linje += f" · {r['status']}"
+        st.markdown(linje)
         if r["bransjer"]:
             st.markdown(" ".join(f"`{b}`" for b in r["bransjer"][:4]))
-        if st.button("Lås opp full adresse – 100 kr", key=r["sak_id"]):
-            st.info("Prototype: her ville full adresse + lenke til saken låses opp, eller inngå i abonnementet ditt.")
+        if r["naeringsvennlig"]:
+            st.success("✓ Kontaktbart foretak i saksdokumentene")
+        st.info(f"💡 {r['tips']}")

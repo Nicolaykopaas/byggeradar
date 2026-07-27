@@ -1,10 +1,36 @@
-# Byggesaksradar
+# Byggeradar
 
-Lead-gen for håndverksbedrifter: varsler om nye byggetillatelser i deres område og bransje,
-matchet mot håndverkere fra Brreg. Produktet selges som abonnement (99 kr/mnd) på ukentlige
-leads. Se [CLAUDE.md](CLAUDE.md) for arkitektur og regler.
+Kuratert oversikt over nye byggetillatelser i Bergen, matchet mot håndverksfag fra Brreg.
+Se [CLAUDE.md](CLAUDE.md) for arkitektur og regler.
 
-**Mål:** ~500 kr/mnd = 6 betalende kunder, med minst mulig manuelt arbeid.
+## Produktdreining (viktig)
+
+Første versjon prøvde å selge kalde «leads» (en offentlig adresse) for 99–100 kr. Testing viste
+at det ikke skaper verdi: kilden har **ingen kontaktinfo vi lovlig kan gi videre** (tiltakshaver er
+en privatperson, §/GDPR), jobben er ofte allerede kontrahert, og bare 6 % av bedriftene er lovlig
+e-postbare. Vi solgte i praksis en betalingsmur foran offentlig info.
+
+**Ny retning:** et *gratis, kuraterende verktøy* i stedet for en betalingsmur. Kjernen er
+[radar.py](radar.py): den leser hver nye byggesak, kaster bort støyen, og løfter fram de få
+prosjektene som er verdt tiden din – rangert på **mulighet** (ferskt + stort + treffer ditt fag),
+med et **ærlig, lovlig handlingstips** per prosjekt. Store prosjekter merkes «kontaktbart foretak»
+(der ansvarlig søkerforetak – en bedrift, ikke en privatperson – er offentlig i saksdokumentene).
+
+Åpne den:
+```bash
+python build_feed_html.py     # bygger + åpner feed/index.html (statisk, dobbeltklikkbar)
+streamlit run finn_feed.py    # interaktiv «Din radar» med filtre på fag/område
+```
+
+Monetisering kommer *etter* at verktøyet er nyttig nok til at folk bruker det: en billig
+«vær først»-varsling (abonnement), ikke stykkpris. Valider først med 10 telefoner (34 % av
+bedriftene har telefon i Brreg). Abonnement-/salgsmaskineriet under er beholdt, men er sekundært.
+
+---
+
+## Legacy: abonnement/salg (beholdt, men nedprioritert)
+
+Lead-gen som abonnement (99 kr/mnd) på ukentlige leads. **Mål:** ~500 kr/mnd = 6 kunder.
 
 ---
 
