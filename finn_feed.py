@@ -59,6 +59,12 @@ for i, r in enumerate(rader):
         st.markdown(linje)
         if r["bransjer"]:
             st.markdown(" ".join(f"`{b}`" for b in r["bransjer"][:4]))
+        a = r["arbeid"]
+        if a["oppgaver"]:
+            st.markdown(f"🛠️ **Arbeid som inngår:** {a['overskrift']}")
+            st.markdown("\n".join(f"- {o}" for o in a["oppgaver"]))
+        else:
+            st.caption(a["overskrift"])
         if r["naeringsvennlig"]:
             st.success("✓ Kontaktbart foretak i saksdokumentene")
         st.info(f"💡 {r['tips']}")

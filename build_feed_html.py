@@ -35,6 +35,7 @@ def bygg() -> str:
         "skala": r["skala"], "skala_etikett": r["skala_etikett"],
         "naering": r["naeringsvennlig"], "mulighet": r["mulighet"],
         "status": r.get("status") or "", "fersk": ferskhet_etikett(r["dager_siden"]),
+        "arbeid": r["arbeid"]["overskrift"], "oppgaver": r["arbeid"]["oppgaver"],
         "tips": r["tips"],
     } for r in rader]
 
@@ -75,12 +76,17 @@ def bygg() -> str:
   .tags {{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }}
   .tag {{ font-size:.74rem; font-weight:600; color:#fff; background:#475569; border-radius:999px; padding:2px 9px; }}
   .naering {{ font-size:.74rem; font-weight:600; color:#166534; background:#dcfce7; border-radius:999px; padding:2px 9px; }}
+  .arbeid {{ font-size:.85rem; }}
+  .arbeid-t {{ color:#334155; margin-bottom:4px; }}
+  .arbeid ul {{ margin:0; padding-left:18px; color:var(--grå); columns:2; column-gap:16px; }}
+  .arbeid li {{ font-size:.8rem; }}
   .tips {{ font-size:.86rem; color:#475569; background:#f8fafc; border-left:3px solid var(--bla); border-radius:0 6px 6px 0; padding:8px 10px; margin-top:auto; }}
   .tom {{ padding:48px 20px; text-align:center; color:var(--grå); }}
   footer {{ color:var(--grå); font-size:.82rem; padding:24px 20px 40px; text-align:center; }}
   @media (prefers-color-scheme:dark) {{
     :root {{ --tekst:#e2e8f0; --bg:#0f172a; --kort:#1e293b; --kant:#334155; --grå:#94a3b8; }}
     .mulighet {{ background:#1e3a8a; color:#bfdbfe; }} .meta {{ color:#cbd5e1; }}
+    .arbeid-t {{ color:#cbd5e1; }}
     .tips {{ background:#0f172a; color:#cbd5e1; }} .naering {{ background:#14532d; color:#bbf7d0; }}
   }}
 </style></head>
@@ -119,6 +125,10 @@ function kort(r) {{
   const tags = r.bransjer.slice(0,4).map(b => `<span class="tag">${{esc(b)}}</span>`).join(" ");
   const naering = r.naering ? `<span class="naering">✓ Kontaktbart foretak</span>` : "";
   const status = r.status ? ` · ${{esc(r.status)}}` : "";
+  const oppgaver = (r.oppgaver && r.oppgaver.length)
+    ? `<div class="arbeid"><div class="arbeid-t">🛠️ Arbeid som inngår: <b>${{esc(r.arbeid)}}</b></div>
+         <ul>${{r.oppgaver.map(o => `<li>${{esc(o)}}</li>`).join("")}}</ul></div>`
+    : `<div class="arbeid"><div class="arbeid-t">${{esc(r.arbeid)}}</div></div>`;
   return `<article class="kort">
     <div class="kort-topp">
       <span class="mulighet" title="Hvor verdt det er å følge opp (0-100)">${{r.mulighet}}</span>
@@ -128,6 +138,7 @@ function kort(r) {{
     <h3>${{esc(r.sakstype)}}</h3>
     <div class="meta">📍 Postnr <strong>${{esc(r.omrade)}}</strong>${{status}}</div>
     <div class="tags">${{tags}} ${{naering}}</div>
+    ${{oppgaver}}
     <div class="tips">💡 ${{esc(r.tips)}}</div>
   </article>`;
 }}
