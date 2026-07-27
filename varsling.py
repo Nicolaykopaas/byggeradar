@@ -13,6 +13,7 @@ avhengigheter. SMTP-innstillinger leses fra .env:
 import smtplib
 import subprocess
 from email.mime.text import MIMEText
+from email.utils import formataddr
 
 from config import env
 from logg import get_logger
@@ -74,9 +75,12 @@ def send_epost(emne: str, tekst: str, til: str = None) -> bool:
         log.info("SMTP ikke fullstendig konfigurert - hopper over e-post (emne: %s)", emne)
         return False
 
+    # Avsender fremstår alltid som SELSKAPET (Byggeradar), aldri en privatperson.
+    # Vi setter et visningsnavn, så mottaker ser "Byggeradar", ikke et personnavn.
+    avsender_navn = env("AVSENDER_NAVN") or "Byggeradar"
     msg = MIMEText(tekst, _charset="utf-8")
     msg["Subject"] = emne
-    msg["From"] = fra
+    msg["From"] = formataddr((avsender_navn, fra))
     msg["To"] = til
 
     try:

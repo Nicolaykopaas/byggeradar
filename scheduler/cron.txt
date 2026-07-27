@@ -11,3 +11,9 @@
 # Ukentlig levering av leads til betalende kunder, mandager kl. 08:30
 # (samtykket leveranse til abonnenter - kan sendes automatisk):
 30 8 * * 1 cd /sti/til/Tillatelse-Handverker && .venv/bin/python send_kunde_leads.py >> logs/kundelevering.log 2>&1
+
+# Autonom salgs-utsending som SELSKAPET (aldri privatperson), tirsdager kl. 09:00.
+# Lager ferske salgs-e-poster og sender maks 10/uke (cap beskytter domene-omdømme).
+# Kun upersonlige adresser (§15), avmelding i hver e-post, aldri samme bedrift to ganger.
+# INERT til SMTP er satt i .env - sender ingenting uten din egen sendekonto.
+0 9 * * 2 cd /sti/til/Tillatelse-Handverker && .venv/bin/python generate_email_drafts.py --utboks >> logs/utsending.log 2>&1 && .venv/bin/python approve_and_send.py --maks 10 >> logs/utsending.log 2>&1

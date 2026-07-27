@@ -55,6 +55,19 @@ Register-ScheduledTask -TaskName "$OppgaveNavn-Kundelevering" -Action $LeverHand
     -Settings $Innst -Description "Ukentlig levering av leads til betalende kunder" -Force | Out-Null
 Write-Host "Registrerte oppgaven '$OppgaveNavn-Kundelevering' - kjører mandager kl. 08:30."
 
+# Autonom salgs-utsending som SELSKAPET (tirsdager kl. 09:00).
+# Lager ferske salgs-e-poster og sender maks 10/uke (cap beskytter domene-omdømme).
+# Kun upersonlige adresser (§15) + avmelding + aldri samme bedrift to ganger.
+# INERT til SMTP er satt i .env - sender ingenting uten din egen sendekonto.
+$SendArg = "-NoProfile -ExecutionPolicy Bypass -Command " +
+    "`"Set-Location '$Rot'; `$py = if (Test-Path '$VenvPy') { '$VenvPy' } else { 'python' }; " +
+    "& `$py generate_email_drafts.py --utboks; & `$py approve_and_send.py --maks 10`""
+$SendHandling = New-ScheduledTaskAction -Execute "powershell.exe" -Argument $SendArg -WorkingDirectory $Rot
+$SendUtloser = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Tuesday -At "09:00"
+Register-ScheduledTask -TaskName "$OppgaveNavn-Utsending" -Action $SendHandling -Trigger $SendUtloser `
+    -Settings $Innst -Description "Autonom salgs-utsending som selskapet (maks 10/uke)" -Force | Out-Null
+Write-Host "Registrerte oppgaven '$OppgaveNavn-Utsending' - kjører tirsdager kl. 09:00 (inert til SMTP er satt)."
+
 Write-Host ""
 Write-Host "Test daglig-jobben nå med:  Start-ScheduledTask -TaskName '$OppgaveNavn'"
 Write-Host "Se status med:               Get-ScheduledTaskInfo -TaskName '$OppgaveNavn'"
