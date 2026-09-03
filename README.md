@@ -6,7 +6,7 @@ Landsdekkende oversikt over nye byggetillatelser, sortert etter hvilke prosjekte
 
 *Skjermbildet viser den faktiske appen kjørt med eksempeldata.*
 
-## Nøkkeltall
+## Status og tall
 
 | | |
 |---|---|
@@ -26,11 +26,13 @@ Hver sak klassifiseres på skala (stor, middels, lite tiltak) ut fra arbeidsbesk
 
 Hvert kort lenker rett til kommunens egen saksside, så du kan sjekke alt selv.
 
-## Slik ble det bygget og verifisert
+## Om testingen
 
-Bygget agentisk med Claude Code. Jeg bryter ned problemet, styrer implementasjonen og vurderer det som kommer ut. Koden får ikke stå før den er verifisert.
+Claude Code skriver koden. Jeg bestemmer hva som skal bygges, og jeg kontrollerer at det stemmer.
 
-`test_feed_filtre.py` kjører 12 tester som sjekker hvert eneste filter mot manuell filtrering av samme datasett, at lenken til kommunen er en ekte http-adresse, og at full gateadresse aldri lekker ut i visningen. `selftest.py` og `helsesjekk.py` verifiserer at pipelinen henger sammen. Grunnen til at filtertestene finnes er at jeg ikke stoler på at et filter virker bare fordi kontrollen vises i grensesnittet.
+`test_feed_filtre.py` kjører 12 tester. De sammenligner hvert eneste filter mot manuell filtrering av det samme datasettet, sjekker at lenken til kommunen er en ekte http-adresse, og passer på at full gateadresse aldri lekker ut i visningen. `selftest.py` og `helsesjekk.py` sjekker at pipelinen henger sammen.
+
+Grunnen til at filtertestene finnes er enkel. Et filter som vises i grensesnittet er ikke det samme som et filter som virker, og forskjellen ser du ikke ved å lese koden.
 
 ## Beslutningen som formet produktet
 
