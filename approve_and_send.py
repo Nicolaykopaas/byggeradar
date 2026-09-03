@@ -1,4 +1,4 @@
-"""Godkjenn og send salgs-e-postene i data/utboks/ – med ÉN kommando.
+"""Godkjenn og send salgs-e-postene i data/utboks/, med ÉN kommando.
 
 Å kjøre dette scriptet ER godkjenningen. Det sender hver e-post i utboksen via
 SMTP, logger bedriften i data/kontaktet.csv (så vi aldri kontakter samme bedrift

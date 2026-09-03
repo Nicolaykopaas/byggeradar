@@ -1,4 +1,4 @@
-"""Oppretter produkt, pris (99 kr/mnd) og en Stripe Payment Link – via requests.
+"""Oppretter produkt, pris (99 kr/mnd) og en Stripe Payment Link, via requests.
 
 Vi bruker Stripe sitt REST-API direkte med `requests` (ingen `stripe`-pakke) for å
 holde oss til avhengighetsregelen i CLAUDE.md. Du limer inn din egen hemmelige
@@ -14,7 +14,7 @@ Kjør på nytt med --force for å lage en ny lenke.
 
 Alternativt: lag en Payment Link manuelt i Stripe-dashbordet og lim inn
 STRIPE_PAYMENT_LINK=https://buy.stripe.com/... i .env. Da trenger du ikke dette
-scriptet i det hele tatt – build_landing.py bruker den lenken direkte.
+scriptet i det hele tatt, build_landing.py bruker den lenken direkte.
 """
 import os
 import sys
@@ -28,7 +28,7 @@ log = get_logger("stripe")
 STRIPE_API = "https://api.stripe.com/v1"
 LINK_FIL = os.path.join(DATA_DIR, "stripe_link.txt")
 
-PRODUKT_NAVN = "Byggesaksradar – ukentlige leads"
+PRODUKT_NAVN = "Byggesaksradar, ukentlige leads"
 PRODUKT_BESKRIVELSE = "Ukentlig e-post med nye byggesaker i ditt område og din bransje."
 PRIS_ORE = 9900          # 99,00 kr
 VALUTA = "nok"

@@ -66,7 +66,7 @@ def bygg() -> str:
     doc = f"""<!doctype html>
 <html lang="nb"><head><meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Byggeradar – nye byggetillatelser i hele Norge</title>
+<title>Byggeradar, nye byggetillatelser i hele Norge</title>
 <style>
   :root {{ --bla:#1d4ed8; --tekst:#0f172a; --grå:#64748b; --kant:#e2e8f0; --bg:#f1f5f9; --kort:#fff; }}
   * {{ box-sizing:border-box; margin:0; padding:0; }}
@@ -131,7 +131,7 @@ def bygg() -> str:
 <body>
   <header><div class="wrap">
     <h1>Byggeradar</h1>
-    <p>Nye byggetillatelser i hele Norge – samlet på ett sted. Velg faget ditt og hvor du
+    <p>Nye byggetillatelser i hele Norge, samlet på ett sted. Velg faget ditt og hvor du
        jobber, så ser du med én gang om det er relevant arbeid. Hvert kort lenker rett til
        saken hos kommunen. Oppdateres daglig fra kommunenes saksinnsyn.</p>
   </div></header>
@@ -152,11 +152,11 @@ def bygg() -> str:
   </div></div></div>
 
   <main class="wrap">
-    <div class="forklar">Høy «mulighet» = ferskt, stort og treffer ditt fag. Vår visning er anonymisert til postnummer –
+    <div class="forklar">Høy «mulighet» = ferskt, stort og treffer ditt fag. Vår visning er anonymisert til postnummer,
        men hvert kort lenker rett til saken hos kommunen, der du ser alt det offentlige.
-       <b>Ærlig om «ledig vs tatt»:</b> offentlig data kan ikke bekrefte om en jobb allerede har entreprenør –
+       <b>Ærlig om «ledig vs tatt»:</b> offentlig data kan ikke bekrefte om en jobb allerede har entreprenør,
        det står i saksdokumenter kommunen ikke gjør søkbare. Vi skjuler de vi <i>kan</i> se er tidlige eller
-       ferdige, og merker resten «uavklart – sjekk saken». Vi lover aldri at en jobb er ledig.</div>
+       ferdige, og merker resten «uavklart, sjekk saken». Vi lover aldri at en jobb er ledig.</div>
     <div class="grid" id="grid"></div>
     <div class="tom" id="tom" style="display:none"></div>
 
@@ -180,20 +180,20 @@ function kort(r) {{
   // Vis ledig/proff-merket KUN når tilgjengelighet er "uavklart", så merket aldri
   // motsier tilgjengelighets-boksen (tatt/tidlig får ikke ledig-merke).
   const badge = (r.tilg_niva === "uavklart")
-    ? (r.trolig_ledig ? `<span class="ledig">👤 Trolig ledig – privat søker</span>`
-                      : (r.naering ? `<span class="naering">🏢 Proff søker inne</span>` : ""))
+    ? (r.trolig_ledig ? `<span class="ledig">Trolig ledig, privat søker</span>`
+                      : (r.naering ? `<span class="naering">Proff søker inne</span>` : ""))
     : "";
   const status = r.status ? ` · ${{esc(r.status)}}` : "";
   const sted = r.kommunenavn ? `${{esc(r.kommunenavn)}} · Postnr <strong>${{esc(r.omrade)}}</strong>`
                              : `Postnr <strong>${{esc(r.omrade)}}</strong>`;
   const oppgaver = (r.oppgaver && r.oppgaver.length)
-    ? `<div class="arbeid"><div class="arbeid-t">🛠️ Arbeid som inngår: <b>${{esc(r.arbeid)}}</b></div>
+    ? `<div class="arbeid"><div class="arbeid-t">Arbeid som inngår: <b>${{esc(r.arbeid)}}</b></div>
          <ul>${{r.oppgaver.map(o => `<li>${{esc(o)}}</li>`).join("")}}</ul></div>`
     : `<div class="arbeid"><div class="arbeid-t">${{esc(r.arbeid)}}</div></div>`;
   const tilg = `<div class="tilg tilg-${{r.tilg_niva}}"><b>${{esc(r.tilg_etikett)}}</b><br>${{esc(r.tilg_forklaring)}}</div>`;
-  const tips = (r.tilg_niva === "uavklart") ? `<div class="tips">💡 ${{esc(r.tips)}}</div>` : "";
+  const tips = (r.tilg_niva === "uavklart") ? `<div class="tips">${{esc(r.tips)}}</div>` : "";
   const lenke = r.kilde_url
-    ? `<a class="lenke" href="${{esc(r.kilde_url)}}" target="_blank" rel="noopener">🔗 Se saken hos kommunen</a>`
+    ? `<a class="lenke" href="${{esc(r.kilde_url)}}" target="_blank" rel="noopener">Se saken hos kommunen</a>`
     : "";
   return `<article class="kort">
     <div class="kort-topp">
@@ -202,7 +202,7 @@ function kort(r) {{
       <span class="fersk">${{esc(r.fersk)}}</span>
     </div>
     <h3>${{esc(r.sakstype)}}</h3>
-    <div class="meta">📍 ${{sted}}${{status}}</div>
+    <div class="meta">${{sted}}${{status}}</div>
     <div class="tags">${{tags}} ${{badge}}</div>
     ${{oppgaver}}
     ${{tilg}}
@@ -244,7 +244,7 @@ function tegn() {{
     tom.style.display = "block";
     tom.innerHTML = "Ingen relevante prosjekter" + (fag ? ` for <b>${{esc(fag)}}</b>` : "") +
       ` i <b>${{esc(sted)}}</b>` + (postnr ? ` (postnr ${{esc(postnr)}})` : "") +
-      " akkurat nå.<br>Prøv et større område, eller kom tilbake i morgen – lista oppdateres daglig.";
+      " akkurat nå.<br>Prøv et større område, eller kom tilbake i morgen, lista oppdateres daglig.";
   }} else {{ tom.style.display = "none"; }}
 
   // Prefyll påmeldings-mailen med valgt fag/område

@@ -1,6 +1,6 @@
 """Varsling: Windows-notifikasjon + e-post via SMTP.
 
-Bruker kun standardbiblioteket (smtplib, subprocess) + config.env — ingen nye
+Bruker kun standardbiblioteket (smtplib, subprocess) + config.env, ingen nye
 avhengigheter. SMTP-innstillinger leses fra .env:
 
     SMTP_HOST=smtp.gmail.com

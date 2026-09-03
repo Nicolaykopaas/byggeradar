@@ -63,7 +63,7 @@ k[2].metric("Nye siste 7 dager", s["ferske_7d"])
 k[3].metric("Store prosjekter", s["store"])
 
 # --- Fangst-trakt: la interesserte melde seg på ukentlig varsel ---
-with st.expander("📬 Få ukentlig varsel på e-post – gratis å komme i gang"):
+with st.expander("Få ukentlig varsel på e-post, gratis å komme i gang"):
     with st.form("varsle_meg"):
         e = st.text_input("Din e-post (helst firmapost@…)")
         c1, c2 = st.columns(2)
@@ -85,14 +85,14 @@ if not rader:
     st.info("Ingen prosjekter med gjeldende filter. Prøv å senke «minimum mulighet» eller utvide området.")
     st.stop()
 
-SKALA_EMOJI = {"stor": "🟢", "middels": "🔵", "liten": "⚪"}
+SKALA_EMOJI = {"stor": "", "middels": "", "liten": ""}
 kol = st.columns(3)
 for i, r in enumerate(rader):
     with kol[i % 3].container(border=True):
         st.markdown(f"**{r['mulighet']}** · {SKALA_EMOJI[r['skala']]} {r['skala_etikett']} · {ferskhet_etikett(r['dager_siden'])}")
         st.markdown(f"#### {r['sakstype']}")
         sted = f"{r['kommunenavn']} · Postnr **{r['omrade']}**" if r.get("kommunenavn") else f"Postnr **{r['omrade']}**"
-        linje = f"📍 {sted}"
+        linje = f"{sted}"
         if r.get("status"):
             linje += f" · {r['status']}"
         st.markdown(linje)
@@ -100,14 +100,14 @@ for i, r in enumerate(rader):
             st.markdown(" ".join(f"`{b}`" for b in r["bransjer"][:4]))
         a = r["arbeid"]
         if a["oppgaver"]:
-            st.markdown(f"🛠️ **Arbeid som inngår:** {a['overskrift']}")
+            st.markdown(f"**Arbeid som inngår:** {a['overskrift']}")
             st.markdown("\n".join(f"- {o}" for o in a["oppgaver"]))
         else:
             st.caption(a["overskrift"])
         tg = r["tilgjengelighet"]
         boks = {"tatt": st.error, "tidlig": st.warning, "uavklart": st.info}[tg["niva"]]
-        boks(f"**{tg['etikett']}** — {tg['forklaring']}")
+        boks(f"**{tg['etikett']}**, {tg['forklaring']}")
         if tg["niva"] == "uavklart":
-            st.caption(f"💡 {r['tips']}")
+            st.caption(f"{r['tips']}")
         if r.get("kilde_url"):
-            st.markdown(f"[🔗 Se saken hos kommunen]({r['kilde_url']})")
+            st.markdown(f"[Se saken hos kommunen]({r['kilde_url']})")

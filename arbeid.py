@@ -21,38 +21,38 @@ TILTAK = [
      ["Snekkerarbeid/tømrer", "Takarbeid", "Elektroinstallasjon", "VVS og rørlegger", "Gulvlegging/flislegging", "Malerarbeid"]),
 
     ("tilbygg", r"\b(tilbygg|påbygg|utvidelse)",
-     "Tilbygg/påbygg – utvidelse av bygget",
+     "Tilbygg/påbygg, utvidelse av bygget",
      ["Grunn/fundament for tilbygget", "Reisverk og bæring", "Tak på tilbygget",
       "Isolasjon og fasade/kledning", "Vinduer og dører", "Elektro og rør hvis nytt oppholdsrom", "Maling"],
      ["Snekkerarbeid/tømrer", "Takarbeid", "Elektroinstallasjon", "VVS og rørlegger", "Malerarbeid"]),
 
     ("fasade", r"\b(fasadeendring|fasade|kledning|ny inngang|vindu)",
-     "Fasadeendring – ytre endringer",
+     "Fasadeendring, ytre endringer",
      ["Ny kledning/panel", "Nye vinduer og dører", "Beslag", "Maling/overflate"],
      ["Snekkerarbeid/tømrer", "Malerarbeid"]),
 
     ("tak", r"\b(tak|takomlegging|omtekking|takvindu|takopplett|ark)",
-     "Takarbeid – nytt tak eller takendring",
+     "Takarbeid, nytt tak eller takendring",
      ["Riving av gammelt tak", "Undertak og lekter", "Taktekking", "Beslag, renner og nedløp", "Evt. takvinduer"],
      ["Takarbeid", "Snekkerarbeid/tømrer"]),
 
     ("vatrom", r"\b(våtrom|bad|dusj|vaskerom)",
-     "Våtrom – nytt eller oppgradert bad",
+     "Våtrom, nytt eller oppgradert bad",
      ["Riving", "Membran og tetting", "Flislegging", "Rør, sluk og sanitær", "Ventilasjon", "Elektro (varmekabel/punkt)"],
      ["VVS og rørlegger", "Gulvlegging/flislegging", "Elektroinstallasjon"]),
 
     ("bruksendring", r"\b(bruksendring|innredning|innreder|loft til|kjeller til|tilleggsdel)",
-     "Bruksendring – tar i bruk areal til nytt formål",
+     "Bruksendring, tar i bruk areal til nytt formål",
      ["Isolasjon og brannskille", "Rømningsvei/vindu", "Elektro", "Rør hvis våtrom/kjøkken", "Gulv", "Maling"],
      ["Snekkerarbeid/tømrer", "Elektroinstallasjon", "VVS og rørlegger", "Gulvlegging/flislegging", "Malerarbeid"]),
 
     ("garasje", r"\b(garasje|carport|uthus|bod|anneks|naust)",
-     "Frittstående bygg – garasje/uthus e.l.",
+     "Frittstående bygg, garasje/uthus e.l.",
      ["Grunn og støp", "Reisverk (tømrer)", "Tak", "Kledning", "Port/dør", "Evt. elektro"],
      ["Snekkerarbeid/tømrer", "Takarbeid", "Elektroinstallasjon"]),
 
     ("terrasse", r"\b(terrasse|veranda|balkong|platting|uteplass)",
-     "Terrasse/veranda – uteplass",
+     "Terrasse/veranda, uteplass",
      ["Fundamenter", "Bæring og bjelkelag", "Terrassebord/dekke", "Rekkverk"],
      ["Snekkerarbeid/tømrer"]),
 
@@ -77,7 +77,7 @@ TILTAK = [
      ["Takarbeid", "Elektroinstallasjon"]),
 
     ("terreng", r"\b(terrenginngrep|vei|avkjørsel|mur og fylling|graving|drenering|va-anlegg|vann og avløp)",
-     "Terreng/utomhus – vei, graving, VA",
+     "Terreng/utomhus, vei, graving, VA",
      ["Graving og masseflytting", "Vei/avkjørsel", "Drenering", "Vann og avløp"],
      ["VVS og rørlegger", "Snekkerarbeid/tømrer"]),
 ]
@@ -109,21 +109,21 @@ def tilgjengelighet(sakstype: str, profesjonell_soker=None) -> dict:
     t = sakstype or ""
     if _TATT.search(t):
         return {"niva": "tatt", "etikett": "Trolig allerede i gang",
-                "forklaring": "Sen fase i saken – arbeidet er trolig alt tildelt. Lite å hente her."}
+                "forklaring": "Sen fase i saken, arbeidet er trolig alt tildelt. Lite å hente her."}
     if _TIDLIG.search(t):
         return {"niva": "tidlig", "etikett": "Svært tidlig",
-                "forklaring": "Ingenting er avgjort ennå – ingen konkret jobb å ta på dette stadiet."}
+                "forklaring": "Ingenting er avgjort ennå, ingen konkret jobb å ta på dette stadiet."}
 
     if profesjonell_soker is True:
-        return {"niva": "uavklart", "etikett": "Proff søker inne – hovedjobb trolig tatt",
+        return {"niva": "uavklart", "etikett": "Proff søker inne, hovedjobb trolig tatt",
                 "forklaring": "Ansvarlig søker er et foretak, så en entreprenør er som regel alt "
                               "inne. Realistisk vei inn: tilby deg som underentreprenør/leverandør."}
     if profesjonell_soker is False:
-        return {"niva": "uavklart", "etikett": "Trolig ledig – privat søker",
-                "forklaring": "Ingen profesjonell søker registrert – størst sjanse for at "
+        return {"niva": "uavklart", "etikett": "Trolig ledig, privat søker",
+                "forklaring": "Ingen profesjonell søker registrert, størst sjanse for at "
                               "tiltakshaver faktisk vil hyre inn. Vær synlig lokalt (§15 hindrer "
                               "kald e-post til privatpersoner)."}
-    return {"niva": "uavklart", "etikett": "Uavklart – må sjekkes",
+    return {"niva": "uavklart", "etikett": "Uavklart, må sjekkes",
             "forklaring": "Offentlig data kan ikke bekrefte om jobben er ledig. Åpne saken hos "
                           "kommunen for å se om ansvarlig utførende alt er på plass."}
 

@@ -135,7 +135,7 @@ else:
     valg = st.selectbox(
         "Velg match",
         visning.index,
-        format_func=lambda i: f"{visning.loc[i, 'bedrift_navn']} — {visning.loc[i, 'sak_adresse']} (score {visning.loc[i, 'score']})",
+        format_func=lambda i: f"{visning.loc[i, 'bedrift_navn']}, {visning.loc[i, 'sak_adresse']} (score {visning.loc[i, 'score']})",
     )
     rad = visning.loc[valg]
 
