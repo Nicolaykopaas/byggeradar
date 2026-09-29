@@ -1,0 +1,35 @@
+name: Refresh demo data
+
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Run pipeline
+        run: python run_pipeline.py
+
+      - name: Commit refreshed data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # matches.csv (~12 MB, regnes ut på nytt hver kjøring) committes
+          # bevisst ikke - den offentlige siden (finn_feed.py) regner den ut
+          # selv ved kald start via ensure_matches.py, fra disse to filene.
+          git add -f data/saker.csv data/bedrifter.csv
+          git diff --cached --quiet && echo "Ingen endringer" || git commit -m "Oppdater demo-data"
+          git push

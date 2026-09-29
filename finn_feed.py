@@ -9,6 +9,7 @@ prosjekt (ingen falsk betalingsmur foran offentlig info).
 import streamlit as st
 
 import kunder
+from ensure_matches import ensure_matches
 from feed import bygg_feed_rader, ferskhet_etikett
 from radar import bygg_radar, ukesammendrag
 
@@ -16,6 +17,7 @@ st.set_page_config(page_title="Byggeradar", layout="wide")
 st.title("Byggeradar")
 st.caption("Vi leser hver nye byggetillatelse i hele Norge så du slipper. Her er de som er verdt tiden din.")
 
+ensure_matches()
 _alle = bygg_feed_rader()
 if not _alle:
     st.warning("Ingen data. Kjør `python run_pipeline.py` først.")
